@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { db } from "@/lib/db";
 import { exigirSocio } from "@/lib/session";
 import { nombrePeriodo, periodoActual, pesos, fechaHora } from "@/lib/periodo";
@@ -31,9 +32,12 @@ export default async function Tienda() {
           <p className="text-sm text-zinc-500">Hola,</p>
           <h1 className="text-xl font-bold">{socio.name.split(" ")[0]}</h1>
         </div>
-        <form action={salir}>
-          <button className="text-sm text-zinc-500 underline">Salir</button>
-        </form>
+        <div className="flex items-center gap-4 text-sm text-zinc-500">
+          <Link href="/tienda/pin" className="underline">Cambiar PIN</Link>
+          <form action={salir}>
+            <button className="underline">Salir</button>
+          </form>
+        </div>
       </header>
 
       <section className="tarjeta">

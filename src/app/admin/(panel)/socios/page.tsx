@@ -9,7 +9,7 @@ type Props = { searchParams: Promise<{ ok?: string; error?: string; q?: string }
 export default async function Socios({ searchParams }: Props) {
   const { ok, error, q } = await searchParams;
   const socios = await db.member.findMany({
-    where: q ? { OR: [{ name: { contains: q } }, { dni: { contains: q } }] } : undefined,
+    where: q ? { OR: [{ name: { contains: q, mode: "insensitive" } }, { dni: { contains: q } }] } : undefined,
     orderBy: { name: "asc" },
   });
 

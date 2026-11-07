@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { periodoActual, pesos } from "@/lib/periodo";
 import { cerrarSesion, exigirSocio, iniciarSesion } from "@/lib/session";
+import { limpiarFallos, mensajeBloqueo, minutosBloqueado, registrarFallo } from "@/lib/throttle";
 
 export type Resultado = { ok: boolean; mensaje: string; dni?: string } | null;
 
@@ -17,15 +18,44 @@ export async function loginSocio(_prev: Resultado, form: FormData): Promise<Resu
   const dni = String(form.get("dni") ?? "").replace(/\D/g, "");
   const pin = String(form.get("pin") ?? "");
 
+  const clave = `socio:${dni}`;
+  const bloqueo = await minutosBloqueado(clave);
+  if (bloqueo) return { ok: false, mensaje: mensajeBloqueo(bloqueo), dni };
+
   const socio = await db.member.findUnique({ where: { dni } });
   if (!socio || !(await bcrypt.compare(pin, socio.pinHash))) {
+    await registrarFallo(clave);
     return { ok: false, mensaje: "DNI o PIN incorrectos", dni };
   }
+  await limpiarFallos(clave);
   if (!socio.active) {
     return { ok: false, mensaje: "Tu cuenta está pausada. Consultá en recepción.", dni };
   }
   await iniciarSesion({ rol: "socio", id: socio.id });
   redirect("/tienda");
+}
+
+export async function cambiarMiPin(_prev: Resultado, form: FormData): Promise<Resultado> {
+  const memberId = await exigirSocio();
+  const actual = String(form.get("actual") ?? "");
+  const nuevo = String(form.get("nuevo") ?? "");
+  const repetido = String(form.get("repetido") ?? "");
+
+  const socio = await db.member.findUniqueOrThrow({ where: { id: memberId } });
+  const clave = `socio:${socio.dni}`;
+  const bloqueo = await minutosBloqueado(clave);
+  if (bloqueo) return { ok: false, mensaje: mensajeBloqueo(bloqueo) };
+
+  if (!(await bcrypt.compare(actual, socio.pinHash))) {
+    await registrarFallo(clave);
+    return { ok: false, mensaje: "El PIN actual no es correcto" };
+  }
+  if (!/^\d{4,6}$/.test(nuevo)) return { ok: false, mensaje: "El PIN nuevo debe tener de 4 a 6 números" };
+  if (nuevo !== repetido) return { ok: false, mensaje: "Los PIN nuevos no coinciden" };
+
+  await db.member.update({ where: { id: memberId }, data: { pinHash: await bcrypt.hash(nuevo, 10) } });
+  await limpiarFallos(clave);
+  return { ok: true, mensaje: "¡Listo! Tu PIN fue cambiado." };
 }
 
 export async function salir() {

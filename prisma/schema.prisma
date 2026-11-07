@@ -6,9 +6,11 @@ generator client {
 }
 
 datasource db {
-  // En desarrollo usamos SQLite (un archivo local). Para producción se cambia a "postgresql".
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  // PostgreSQL (en producción, Supabase).
+  // DATABASE_URL: conexión que usa la app. DIRECT_URL: conexión para crear/actualizar tablas.
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // Un socio del gimnasio
@@ -49,4 +51,12 @@ model Consumption {
   createdAt   DateTime @default(now())
 
   @@index([memberId, period])
+}
+
+// Intentos fallidos de login, para bloquear a quien prueba PINs o contraseñas al azar
+model LoginThrottle {
+  key         String    @id // ej: "socio:30111222" o "admin:<ip>"
+  failures    Int       @default(0)
+  lockedUntil DateTime?
+  updatedAt   DateTime  @updatedAt
 }

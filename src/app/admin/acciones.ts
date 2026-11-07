@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { periodoActual } from "@/lib/periodo";
 import { cerrarSesion, exigirAdmin, iniciarSesion } from "@/lib/session";
+import { ipCliente, limpiarFallos, mensajeBloqueo, minutosBloqueado, registrarFallo } from "@/lib/throttle";
 
 const texto = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const entero = (f: FormData, k: string) => Math.round(Number(texto(f, k).replace(/[^\d]/g, "")));
@@ -13,9 +14,15 @@ const pinValido = (pin: string) => /^\d{4,6}$/.test(pin);
 
 export async function loginAdmin(_prev: string | null, form: FormData): Promise<string | null> {
   const clave = texto(form, "clave");
+  const key = `admin:${await ipCliente()}`;
+  const bloqueo = await minutosBloqueado(key);
+  if (bloqueo) return mensajeBloqueo(bloqueo);
+
   if (!process.env.ADMIN_PASSWORD || clave !== process.env.ADMIN_PASSWORD) {
+    await registrarFallo(key);
     return "Contraseña incorrecta";
   }
+  await limpiarFallos(key);
   await iniciarSesion({ rol: "admin" });
   redirect("/admin");
 }
