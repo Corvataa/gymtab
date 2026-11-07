@@ -1,0 +1,52 @@
+// Esquema de la base de datos.
+// Cada "model" es una tabla. Si cambiás algo acá, corré: npx prisma db push
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // En desarrollo usamos SQLite (un archivo local). Para producción se cambia a "postgresql".
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Un socio del gimnasio
+model Member {
+  id           String        @id @default(cuid())
+  name         String
+  dni          String        @unique
+  pinHash      String // el PIN se guarda encriptado, nunca en texto plano
+  monthlyLimit Int           @default(20000) // tope de consumo mensual en pesos
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  consumptions Consumption[]
+}
+
+// Un producto que se vende (agua, barrita, bebida isotónica...)
+model Product {
+  id           String        @id @default(cuid())
+  name         String
+  price        Int // en pesos
+  emoji        String        @default("🥤")
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  consumptions Consumption[]
+}
+
+// Cada vez que un socio saca algo
+model Consumption {
+  id          String   @id @default(cuid())
+  member      Member   @relation(fields: [memberId], references: [id])
+  memberId    String
+  product     Product  @relation(fields: [productId], references: [id])
+  productId   String
+  productName String // copiamos nombre y precio por si después cambian
+  unitPrice   Int
+  quantity    Int      @default(1)
+  period      String // mes al que se carga, formato "2026-11"
+  voided      Boolean  @default(false) // anulado por error
+  createdAt   DateTime @default(now())
+
+  @@index([memberId, period])
+}
