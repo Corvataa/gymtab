@@ -1,21 +1,28 @@
-# 💧 GymTab
+# TUTUKAPP
 
-App para que los socios del gimnasio anoten lo que consumen (agua, barritas, bebidas…)
-y el monto **se sume a la cuota del mes** en lugar de pagar en el momento.
+Sistema para gimnasios: socios, planes, cobro de cuotas y una **cuenta de consumos**
+(agua, barritas, bebidas…) que se suma a la cuota en lugar de pagar en el momento.
 
 ## Qué hace
 
-**Socio** (desde el celular, escaneando el QR de la heladera):
-- Entra con su DNI y un PIN.
-- Toca el producto, elige la cantidad y confirma.
-- Ve cuánto lleva acumulado en el mes y su tope.
-- Puede anular un consumo durante 10 minutos si se equivocó.
+**Socio** (desde el celular, escaneando el QR):
+- Entra con su DNI y un PIN (y lo puede cambiar).
+- Ve el estado de su cuota (al día, pendiente o vencida) y cuánto le toca pagar: cuota + consumos.
+- Toca el producto que sacó, elige la cantidad y confirma. Puede anularlo durante 10 minutos.
 
 **Administración** (`/admin`):
-- **Resumen:** cuánto hay que sumarle a la cuota de cada socio, por mes. Se descarga en planilla (CSV para Excel).
-- **Socios:** alta, tope mensual, pausar la cuenta (por ejemplo, si debe la cuota), cambiar PIN, anotar consumos desde recepción, anular.
-- **Productos:** alta, precio, ocultar.
-- **QR:** cartel para imprimir y pegar en la heladera.
+- **Inicio:** cuotas del mes: cobrado, falta cobrar, socios al día, pendientes y vencidos. Planilla CSV.
+- **Socios:** alta con plan, datos de contacto, tope de consumos, pausar, cambiar PIN.
+  En la ficha de cada socio: **registrar cobro** (cuota + consumos sin cobrar, medio de pago), historial y anulación de cobros.
+- **Planes:** opciones de cuota (ej: 3 veces por semana, libre) con su precio.
+- **Productos:** lo que se vende y su precio.
+- **QR:** cartel para imprimir.
+- **Configuración:** nombre del gimnasio, día de vencimiento, bloquear consumos a quien tiene la cuota vencida.
+
+### Cómo funcionan las cuotas
+- Cada mes el socio debe la cuota de su plan. Hasta el día de vencimiento figura **Pendiente**; después, **Vencida**.
+- Al cobrar, se incluyen todos los consumos que todavía no se cobraron. Los consumos posteriores quedan para el próximo cobro.
+- Si se anula un cobro, sus consumos vuelven a quedar pendientes.
 
 ## Publicarla en internet (Supabase + Vercel)
 
@@ -25,7 +32,7 @@ y el monto **se sume a la cuota del mes** en lugar de pagar en el momento.
    Reemplazá `[YOUR-PASSWORD]` por tu contraseña.
 
 ### 2. App en Vercel
-1. En [vercel.com](https://vercel.com): **Add New → Project** → elegí el repositorio `gymtab` → **Import**.
+1. En [vercel.com](https://vercel.com): **Add New → Project** → elegí el repositorio → **Import**.
 2. En **Environment Variables** cargá estas 4:
 
    | Nombre | Valor |
@@ -60,7 +67,7 @@ npm run dev                 # arranca la app en http://localhost:3000
 
 ```
 prisma/
-  schema.prisma        ← las tablas: Member (socios), Product, Consumption (consumos), LoginThrottle
+  schema.prisma        ← las tablas: Settings, Plan, Member (socios), Payment (cobros), Product, Consumption (consumos), LoginThrottle
   migrations/          ← historial de cambios a las tablas (se aplican al publicar)
   seed.ts              ← datos de ejemplo
 src/
@@ -69,6 +76,7 @@ src/
     session.ts         ← login y sesiones (cookies)
     throttle.ts        ← bloqueo tras 5 intentos fallidos
     periodo.ts         ← fechas, meses y formato de pesos
+    cuotas.ts          ← estado de cuota de cada socio y montos a cobrar
   app/                 ← cada carpeta es una página (dirección web)
     page.tsx           ← "/"  login del socio
     acciones.ts        ← lo que puede hacer un socio (entrar, anotar, anular)
@@ -79,7 +87,9 @@ src/
       login/           ← "/admin/login"
       (panel)/         ← páginas del panel (el paréntesis no aparece en la URL)
         page.tsx       ← "/admin" resumen del mes
-        socios/        ← "/admin/socios" y "/admin/socios/[id]"
+        socios/        ← "/admin/socios" y "/admin/socios/[id]" (ficha + cobros)
+        planes/
+        configuracion/
         productos/
         qr/
       exportar/        ← descarga del CSV
@@ -97,6 +107,8 @@ Conceptos clave para ir aprendiendo:
 - [x] Preparada para Supabase + Vercel.
 - [x] Bloqueo de 15 minutos tras 5 intentos de PIN o contraseña fallidos.
 - [x] El socio puede cambiar su propio PIN.
-- [ ] Avisos de consumo (email o WhatsApp).
-- [ ] Integración con CrossHero si abren una API.
-- [ ] Pago directo con Mercado Pago.
+- [x] Planes, cobro de cuotas con consumos incluidos, estados al día / pendiente / vencida.
+- [ ] Cobro online con Mercado Pago.
+- [ ] Reservas de clases con cupos.
+- [ ] Entrenamiento del día y registro de marcas.
+- [ ] Avisos de vencimiento (email o WhatsApp).

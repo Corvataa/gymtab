@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { periodoActual, pesos } from "@/lib/periodo";
+import { estadoSocio } from "@/lib/cuotas";
 import { cerrarSesion, exigirSocio, iniciarSesion } from "@/lib/session";
 import { limpiarFallos, mensajeBloqueo, minutosBloqueado, registrarFallo } from "@/lib/throttle";
 
@@ -83,6 +84,10 @@ export async function registrarConsumo(productId: string, cantidad: number): Pro
     db.product.findUnique({ where: { id: productId } }),
   ]);
   if (!socio?.active) return { ok: false, mensaje: "Tu cuenta está pausada" };
+  const { estado, cfg } = await estadoSocio(memberId);
+  if (cfg.blockOverdue && estado === "vencida") {
+    return { ok: false, mensaje: "Tu cuota está vencida. Regularizala en recepción para seguir sumando consumos." };
+  }
   if (!producto?.active) return { ok: false, mensaje: "Ese producto no está disponible" };
 
   // Controlamos el tope mensual
@@ -114,7 +119,7 @@ export async function registrarConsumo(productId: string, cantidad: number): Pro
 export async function anularConsumo(id: string): Promise<Resultado> {
   const memberId = await exigirSocio();
   const c = await db.consumption.findUnique({ where: { id } });
-  if (!c || c.memberId !== memberId || c.voided) {
+  if (!c || c.memberId !== memberId || c.voided || c.paymentId) {
     return { ok: false, mensaje: "No se encontró el consumo" };
   }
   const minutos = (Date.now() - c.createdAt.getTime()) / 60000;

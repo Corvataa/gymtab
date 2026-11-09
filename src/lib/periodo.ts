@@ -50,3 +50,23 @@ export function fechaHora(fecha: Date): string {
     minute: "2-digit",
   });
 }
+
+// Día del mes de hoy (1-31) en Argentina
+export function diaDelMes(fecha = new Date()): number {
+  return Number(new Intl.DateTimeFormat("en-CA", { timeZone: TZ, day: "numeric" }).format(fecha));
+}
+
+// Mes siguiente: "2026-12" -> "2027-01"
+export function periodoSiguiente(periodo: string, meses = 1): string {
+  const [y, m] = periodo.split("-").map(Number);
+  const d = new Date(y, m - 1 + meses, 15);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+// Meses entre los que se puede elegir al cobrar (2 atrás, actual, 2 adelante)
+export function periodosCobro(): string[] {
+  const actual = periodoActual();
+  return [-2, -1, 0, 1, 2].map((n) => periodoSiguiente(actual, n));
+}
+
+export const esPeriodo = (p?: string | null): p is string => !!p && /^\d{4}-\d{2}$/.test(p);

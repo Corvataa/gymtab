@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { exigirSocio } from "@/lib/session";
 import { nombrePeriodo, periodoActual, pesos, fechaHora } from "@/lib/periodo";
+import { consumosSinCobrar, estadoSocio, ESTADOS } from "@/lib/cuotas";
 import { salir, totalDelMes } from "../acciones";
 import Productos from "./Productos";
 import BotonAnular from "./BotonAnular";
@@ -12,8 +13,9 @@ export default async function Tienda() {
   const memberId = await exigirSocio();
   const periodo = periodoActual();
 
-  const [socio, productos, consumos, total] = await Promise.all([
-    db.member.findUniqueOrThrow({ where: { id: memberId } }),
+  const [{ socio, pago, estado, cfg }, pendientes, productos, consumos, total] = await Promise.all([
+    estadoSocio(memberId, periodo),
+    consumosSinCobrar(memberId),
     db.product.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
     db.consumption.findMany({
       where: { memberId, period: periodo },
@@ -22,6 +24,7 @@ export default async function Tienda() {
     totalDelMes(memberId, periodo),
   ]);
 
+  const cuota = pago ? 0 : (socio.plan?.price ?? 0);
   const porcentaje = Math.min(100, Math.round((total / socio.monthlyLimit) * 100));
   const ahora = Date.now();
 
@@ -29,6 +32,7 @@ export default async function Tienda() {
     <main className="mx-auto flex max-w-md flex-col gap-5 px-4 py-6">
       <header className="flex items-center justify-between">
         <div>
+          <p className="text-xs font-black tracking-widest text-emerald-700 dark:text-emerald-400">TUTUKAPP</p>
           <p className="text-sm text-zinc-500">Hola,</p>
           <h1 className="text-xl font-bold">{socio.name.split(" ")[0]}</h1>
         </div>
@@ -41,8 +45,27 @@ export default async function Tienda() {
       </header>
 
       <section className="tarjeta">
-        <p className="text-sm text-zinc-500">Se suma a tu cuota de {nombrePeriodo(periodo)}</p>
-        <p className="mt-1 text-3xl font-bold">{pesos(total)}</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm text-zinc-500">{pago ? "Tu próximo cobro" : `Tu cuota de ${nombrePeriodo(periodo)}`}</p>
+          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${ESTADOS[estado].clase}`}>
+            {ESTADOS[estado].texto}
+          </span>
+        </div>
+        <p className="mt-1 text-3xl font-bold">{pesos(cuota + pendientes.total)}</p>
+        <p className="text-sm text-zinc-500">
+          {cuota > 0 && <>Cuota {socio.plan?.name} {pesos(cuota)} + </>}consumos {pesos(pendientes.total)}
+        </p>
+        {estado === "pendiente" && <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">Vence el día {cfg.dueDay}</p>}
+        {estado === "vencida" && (
+          <p className="mt-1 text-xs text-red-700 dark:text-red-400">
+            Tu cuota está vencida.{cfg.blockOverdue && " Regularizala en recepción para seguir sumando consumos."}
+          </p>
+        )}
+      </section>
+
+      <section className="tarjeta">
+        <p className="text-sm text-zinc-500">Consumos de {nombrePeriodo(periodo)}</p>
+        <p className="mt-1 text-xl font-bold">{pesos(total)}</p>
         <div className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
           <div
             className={`h-full ${porcentaje > 85 ? "bg-amber-500" : "bg-emerald-600"}`}

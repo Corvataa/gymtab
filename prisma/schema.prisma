@@ -13,16 +13,60 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// Configuración del gimnasio (una sola fila, id = 1)
+model Settings {
+  id           Int     @id @default(1)
+  gymName      String  @default("Mi gimnasio")
+  dueDay       Int     @default(10) // día del mes en que vence la cuota
+  blockOverdue Boolean @default(true) // si la cuota está vencida, no puede sumar consumos
+}
+
+// Un plan de cuota (ej: "3 veces por semana", "Libre")
+model Plan {
+  id             String   @id @default(cuid())
+  name           String
+  price          Int // cuota mensual en pesos
+  classesPerWeek Int? // vacío = libre
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  members        Member[]
+}
+
 // Un socio del gimnasio
 model Member {
   id           String        @id @default(cuid())
   name         String
   dni          String        @unique
   pinHash      String // el PIN se guarda encriptado, nunca en texto plano
+  phone        String?
+  email        String?
+  plan         Plan?         @relation(fields: [planId], references: [id])
+  planId       String?
   monthlyLimit Int           @default(20000) // tope de consumo mensual en pesos
   active       Boolean       @default(true)
   createdAt    DateTime      @default(now())
   consumptions Consumption[]
+  payments     Payment[]
+}
+
+// Un cobro: la cuota de un mes + los consumos que estaban pendientes
+model Payment {
+  id             String        @id @default(cuid())
+  member         Member        @relation(fields: [memberId], references: [id])
+  memberId       String
+  period         String // mes de cuota que se paga, "2026-11"
+  planName       String? // copiamos el plan por si después cambia
+  feeAmount      Int // monto de la cuota
+  consumosAmount Int // monto de consumos incluidos
+  total          Int
+  method         String // efectivo, transferencia, tarjeta, mercadopago
+  notes          String?
+  voided         Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  consumptions   Consumption[]
+
+  @@index([memberId, period])
+  @@index([createdAt])
 }
 
 // Un producto que se vende (agua, barrita, bebida isotónica...)
@@ -48,9 +92,12 @@ model Consumption {
   quantity    Int      @default(1)
   period      String // mes al que se carga, formato "2026-11"
   voided      Boolean  @default(false) // anulado por error
+  payment     Payment? @relation(fields: [paymentId], references: [id])
+  paymentId   String? // cobro en el que se incluyó (vacío = pendiente de cobro)
   createdAt   DateTime @default(now())
 
   @@index([memberId, period])
+  @@index([memberId, paymentId])
 }
 
 // Intentos fallidos de login, para bloquear a quien prueba PINs o contraseñas al azar

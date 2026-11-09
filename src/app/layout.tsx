@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "GymTab",
-  description: "Consumos del gimnasio que se suman a tu cuota",
+  title: "TUTUKAPP",
+  description: "Tu gimnasio: cuota, consumos y más",
 };
 
 export const viewport: Viewport = {
