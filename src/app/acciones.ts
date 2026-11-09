@@ -8,6 +8,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { periodoActual, pesos } from "@/lib/periodo";
 import { estadoSocio } from "@/lib/cuotas";
+import { crearLinkDePago, mercadoPagoActivo } from "@/lib/mercadopago";
+import { headers } from "next/headers";
 import { cerrarSesion, exigirSocio, iniciarSesion } from "@/lib/session";
 import { limpiarFallos, mensajeBloqueo, minutosBloqueado, registrarFallo } from "@/lib/throttle";
 
@@ -86,7 +88,7 @@ export async function registrarConsumo(productId: string, cantidad: number): Pro
   if (!socio?.active) return { ok: false, mensaje: "Tu cuenta está pausada" };
   const { estado, cfg } = await estadoSocio(memberId);
   if (cfg.blockOverdue && estado === "vencida") {
-    return { ok: false, mensaje: "Tu cuota está vencida. Regularizala en recepción para seguir sumando consumos." };
+    return { ok: false, mensaje: "Tu cuota está vencida. Pagala para seguir sumando consumos." };
   }
   if (!producto?.active) return { ok: false, mensaje: "Ese producto no está disponible" };
 
@@ -129,4 +131,20 @@ export async function anularConsumo(id: string): Promise<Resultado> {
   await db.consumption.update({ where: { id }, data: { voided: true } });
   revalidatePath("/tienda");
   return { ok: true, mensaje: "Consumo anulado" };
+}
+
+// El socio toca "Pagar con Mercado Pago": creamos el link y lo mandamos ahí
+export async function pagarOnline() {
+  const memberId = await exigirSocio();
+  if (!mercadoPagoActivo()) redirect("/tienda?pago=no_disponible");
+  const h = await headers();
+  const urlBase = `${h.get("x-forwarded-proto") ?? "http"}://${h.get("x-forwarded-host") ?? h.get("host")}`;
+  let link: string;
+  try {
+    link = await crearLinkDePago(memberId, urlBase);
+  } catch (e) {
+    console.error("No se pudo crear el pago", e);
+    redirect("/tienda?pago=error");
+  }
+  redirect(link);
 }

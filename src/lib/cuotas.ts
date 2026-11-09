@@ -46,7 +46,7 @@ export async function consumosSinCobrar(memberId: string) {
 export async function estadoSocio(memberId: string, periodo = periodoActual()) {
   const [socio, pago, cfg] = await Promise.all([
     db.member.findUniqueOrThrow({ where: { id: memberId }, include: { plan: true } }),
-    db.payment.findFirst({ where: { memberId, period: periodo, voided: false } }),
+    db.payment.findFirst({ where: { memberId, period: periodo, voided: false, coversFee: true } }),
     configuracion(),
   ]);
   return { socio, pago, estado: calcularEstado(!!socio.planId, !!pago, periodo, cfg.dueDay), cfg };
@@ -64,7 +64,8 @@ export async function resumenSocios(periodo: string) {
     configuracion(),
   ]);
 
-  const pagoPorSocio = new Map(pagos.map((p) => [p.memberId, p]));
+  // Solo los cobros que incluyen la cuota dejan al socio "al día"
+  const pagoPorSocio = new Map(pagos.filter((p) => p.coversFee).map((p) => [p.memberId, p]));
   const consumosPorSocio = new Map<string, number>();
   for (const c of pendientes) {
     consumosPorSocio.set(c.memberId, (consumosPorSocio.get(c.memberId) ?? 0) + c.unitPrice * c.quantity);

@@ -3,15 +3,40 @@ import { db } from "@/lib/db";
 import { exigirSocio } from "@/lib/session";
 import { nombrePeriodo, periodoActual, pesos, fechaHora } from "@/lib/periodo";
 import { consumosSinCobrar, estadoSocio, ESTADOS } from "@/lib/cuotas";
-import { salir, totalDelMes } from "../acciones";
+import { pagarOnline, salir, totalDelMes } from "../acciones";
+import { mercadoPagoActivo, procesarPagoMP, type ResultadoPago } from "@/lib/mercadopago";
 import Productos from "./Productos";
 import BotonAnular from "./BotonAnular";
 
 export const dynamic = "force-dynamic";
 
-export default async function Tienda() {
+type Props = { searchParams: Promise<{ payment_id?: string; pago?: string }> };
+
+const MENSAJES_PAGO: Record<string, { texto: string; ok: boolean }> = {
+  aprobado: { texto: "¡Pago aprobado! Ya quedó registrado.", ok: true },
+  pendiente: { texto: "Tu pago está en proceso. Cuando Mercado Pago lo apruebe, se registra solo.", ok: true },
+  rechazado: { texto: "El pago fue rechazado. Probá con otro medio de pago.", ok: false },
+  desconocido: { texto: "No pudimos verificar el pago. Si te lo cobraron, avisá en recepción.", ok: false },
+  error: { texto: "No se pudo iniciar el pago. Probá de nuevo en unos minutos.", ok: false },
+  no_disponible: { texto: "El pago online todavía no está habilitado en este gimnasio.", ok: false },
+};
+
+export default async function Tienda({ searchParams }: Props) {
   const memberId = await exigirSocio();
   const periodo = periodoActual();
+
+  // Si vuelve de Mercado Pago, verificamos el pago antes de mostrar la pantalla
+  const { payment_id, pago: avisoPago } = await searchParams;
+  let resultado: ResultadoPago | string | undefined = avisoPago;
+  if (payment_id && mercadoPagoActivo()) {
+    try {
+      resultado = await procesarPagoMP(payment_id);
+    } catch (e) {
+      console.error("Error verificando pago", e);
+      resultado = "pendiente";
+    }
+  }
+  const mensajePago = resultado ? MENSAJES_PAGO[resultado] : undefined;
 
   const [{ socio, pago, estado, cfg }, pendientes, productos, consumos, total] = await Promise.all([
     estadoSocio(memberId, periodo),
@@ -25,6 +50,7 @@ export default async function Tienda() {
   ]);
 
   const cuota = pago ? 0 : (socio.plan?.price ?? 0);
+  const aPagar = cuota + pendientes.total;
   const porcentaje = Math.min(100, Math.round((total / socio.monthlyLimit) * 100));
   const ahora = Date.now();
 
@@ -44,6 +70,19 @@ export default async function Tienda() {
         </div>
       </header>
 
+      {mensajePago && (
+        <p
+          role="status"
+          className={`rounded-xl px-4 py-3 text-sm font-medium ${
+            mensajePago.ok
+              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"
+              : "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200"
+          }`}
+        >
+          {mensajePago.texto}
+        </p>
+      )}
+
       <section className="tarjeta">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm text-zinc-500">{pago ? "Tu próximo cobro" : `Tu cuota de ${nombrePeriodo(periodo)}`}</p>
@@ -51,15 +90,22 @@ export default async function Tienda() {
             {ESTADOS[estado].texto}
           </span>
         </div>
-        <p className="mt-1 text-3xl font-bold">{pesos(cuota + pendientes.total)}</p>
+        <p className="mt-1 text-3xl font-bold">{pesos(aPagar)}</p>
         <p className="text-sm text-zinc-500">
           {cuota > 0 && <>Cuota {socio.plan?.name} {pesos(cuota)} + </>}consumos {pesos(pendientes.total)}
         </p>
         {estado === "pendiente" && <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">Vence el día {cfg.dueDay}</p>}
         {estado === "vencida" && (
           <p className="mt-1 text-xs text-red-700 dark:text-red-400">
-            Tu cuota está vencida.{cfg.blockOverdue && " Regularizala en recepción para seguir sumando consumos."}
+            Tu cuota está vencida.{cfg.blockOverdue && " Pagala para seguir sumando consumos."}
           </p>
+        )}
+        {aPagar > 0 && mercadoPagoActivo() && (
+          <form action={pagarOnline} className="mt-4">
+            <button className="btn w-full bg-sky-500 text-white hover:bg-sky-600">
+              Pagar {pesos(aPagar)} con Mercado Pago
+            </button>
+          </form>
         )}
       </section>
 

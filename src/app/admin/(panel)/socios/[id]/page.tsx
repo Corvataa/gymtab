@@ -34,7 +34,7 @@ export default async function Socio({ params, searchParams }: Props) {
     configuracion(),
   ]);
 
-  const pagados = new Set(pagos.filter((x) => !x.voided).map((x) => x.period));
+  const pagados = new Set(pagos.filter((x) => !x.voided && x.coversFee).map((x) => x.period));
   const actual = periodoActual();
   const estado = calcularEstado(!!socio.planId, pagados.has(actual), actual, cfg.dueDay);
   // Mes que se propone cobrar: el actual si no está pago; si no, el siguiente
@@ -145,7 +145,9 @@ export default async function Socio({ params, searchParams }: Props) {
               {pagos.map((x) => (
                 <li key={x.id} className="flex items-center justify-between gap-3 py-2 text-sm">
                   <div className={x.voided ? "text-zinc-400 line-through" : ""}>
-                    <p className="font-medium first-letter:uppercase">{nombrePeriodo(x.period)}</p>
+                    <p className="font-medium first-letter:uppercase">
+                      {x.coversFee ? nombrePeriodo(x.period) : "Solo consumos"}
+                    </p>
                     <p className="text-xs text-zinc-500">
                       {fechaHora(x.createdAt)} · {NOMBRE_METODO[x.method] ?? x.method}
                       {x.consumosAmount > 0 && ` · incluye ${pesos(x.consumosAmount)} de consumos`}

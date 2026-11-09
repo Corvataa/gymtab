@@ -8,6 +8,7 @@ Sistema para gimnasios: socios, planes, cobro de cuotas y una **cuenta de consum
 **Socio** (desde el celular, escaneando el QR):
 - Entra con su DNI y un PIN (y lo puede cambiar).
 - Ve el estado de su cuota (al día, pendiente o vencida) y cuánto le toca pagar: cuota + consumos.
+- **Paga online con Mercado Pago** y queda al día automáticamente.
 - Toca el producto que sacó, elige la cantidad y confirma. Puede anularlo durante 10 minutos.
 
 **Administración** (`/admin`):
@@ -23,6 +24,7 @@ Sistema para gimnasios: socios, planes, cobro de cuotas y una **cuenta de consum
 - Cada mes el socio debe la cuota de su plan. Hasta el día de vencimiento figura **Pendiente**; después, **Vencida**.
 - Al cobrar, se incluyen todos los consumos que todavía no se cobraron. Los consumos posteriores quedan para el próximo cobro.
 - Si se anula un cobro, sus consumos vuelven a quedar pendientes.
+- Si la cuota ya está paga, el socio puede pagar online solo sus consumos.
 
 ## Publicarla en internet (Supabase + Vercel)
 
@@ -47,6 +49,23 @@ Sistema para gimnasios: socios, planes, cobro de cuotas y una **cuenta de consum
 
 Cada vez que se sube un cambio a GitHub, Vercel publica la nueva versión automáticamente.
 
+## Activar pagos con Mercado Pago
+
+1. Entrá a [mercadopago.com.ar/developers](https://www.mercadopago.com.ar/developers) con la cuenta del gimnasio
+   → **Tus integraciones → Crear aplicación** → tipo **Pagos online** → **Checkout Pro**.
+2. **Primero probalo:** en **Credenciales de prueba** copiá el *Access Token* y cargalo en Vercel como
+   `MP_ACCESS_TOKEN`. Mercado Pago te da tarjetas y usuarios de prueba para pagar sin plata real.
+3. **Webhooks** (dentro de la aplicación): URL `https://tu-app.vercel.app/api/mercadopago/webhook`,
+   evento **Pagos**. Copiá la **clave secreta** y cargala en Vercel como `MP_WEBHOOK_SECRET`.
+4. Cuando todo funcione, reemplazá `MP_ACCESS_TOKEN` por el de **Credenciales de producción**.
+5. En Vercel, después de cambiar variables: **Deployments → ⋯ → Redeploy**.
+
+Mientras `MP_ACCESS_TOKEN` no esté cargado, el botón de pago no aparece y todo sigue funcionando con cobro manual.
+Mercado Pago cobra una comisión por cada pago (la ves en tu cuenta de Mercado Pago).
+
+**Seguridad:** la app nunca confía en lo que llega por la URL o el aviso: siempre le consulta a Mercado Pago
+el estado y el monto real del pago. Cada pago se registra una sola vez aunque lleguen avisos repetidos.
+
 ## Cómo correrla en tu compu (para programar)
 
 Necesitás [Node.js](https://nodejs.org) 20 o más nuevo y una base de datos PostgreSQL
@@ -67,7 +86,7 @@ npm run dev                 # arranca la app en http://localhost:3000
 
 ```
 prisma/
-  schema.prisma        ← las tablas: Settings, Plan, Member (socios), Payment (cobros), Product, Consumption (consumos), LoginThrottle
+  schema.prisma        ← las tablas: Settings, Plan, Member (socios), Payment (cobros), Checkout (pagos online), Product, Consumption (consumos), LoginThrottle
   migrations/          ← historial de cambios a las tablas (se aplican al publicar)
   seed.ts              ← datos de ejemplo
 src/
@@ -77,6 +96,7 @@ src/
     throttle.ts        ← bloqueo tras 5 intentos fallidos
     periodo.ts         ← fechas, meses y formato de pesos
     cuotas.ts          ← estado de cuota de cada socio y montos a cobrar
+    mercadopago.ts     ← crear links de pago y confirmar pagos aprobados
   app/                 ← cada carpeta es una página (dirección web)
     page.tsx           ← "/"  login del socio
     acciones.ts        ← lo que puede hacer un socio (entrar, anotar, anular)
@@ -93,6 +113,7 @@ src/
         productos/
         qr/
       exportar/        ← descarga del CSV
+    api/mercadopago/webhook/  ← donde Mercado Pago avisa los pagos
 ```
 
 Conceptos clave para ir aprendiendo:
@@ -108,7 +129,7 @@ Conceptos clave para ir aprendiendo:
 - [x] Bloqueo de 15 minutos tras 5 intentos de PIN o contraseña fallidos.
 - [x] El socio puede cambiar su propio PIN.
 - [x] Planes, cobro de cuotas con consumos incluidos, estados al día / pendiente / vencida.
-- [ ] Cobro online con Mercado Pago.
+- [x] Cobro online con Mercado Pago.
 - [ ] Reservas de clases con cupos.
 - [ ] Entrenamiento del día y registro de marcas.
 - [ ] Avisos de vencimiento (email o WhatsApp).

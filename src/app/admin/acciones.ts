@@ -196,7 +196,7 @@ export async function registrarCobro(form: FormData) {
   if (!(METODOS as readonly string[]).includes(metodo)) redirect(aviso(`${volver}`, "error", "Elegí el medio de pago"));
 
   const socio = await db.member.findUniqueOrThrow({ where: { id: memberId }, include: { plan: true } });
-  const yaPagado = await db.payment.findFirst({ where: { memberId, period: periodo, voided: false } });
+  const yaPagado = await db.payment.findFirst({ where: { memberId, period: periodo, voided: false, coversFee: true } });
   if (yaPagado) redirect(aviso(`${volver}`, "error", "Esa cuota ya está cobrada"));
 
   const pendientes = incluirConsumos ? await consumosSinCobrar(memberId) : { ids: [], total: 0 };

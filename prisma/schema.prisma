@@ -47,6 +47,7 @@ model Member {
   createdAt    DateTime      @default(now())
   consumptions Consumption[]
   payments     Payment[]
+  checkouts    Checkout[]
 }
 
 // Un cobro: la cuota de un mes + los consumos que estaban pendientes
@@ -60,13 +61,37 @@ model Payment {
   consumosAmount Int // monto de consumos incluidos
   total          Int
   method         String // efectivo, transferencia, tarjeta, mercadopago
+  coversFee      Boolean       @default(true) // true = incluye la cuota del mes; false = solo consumos
   notes          String?
   voided         Boolean       @default(false)
   createdAt      DateTime      @default(now())
   consumptions   Consumption[]
+  checkout       Checkout?
 
   @@index([memberId, period])
   @@index([createdAt])
+}
+
+// Un intento de pago online con Mercado Pago.
+// Se crea cuando el socio toca "Pagar" y se completa cuando Mercado Pago confirma el pago.
+model Checkout {
+  id             String   @id @default(cuid())
+  member         Member   @relation(fields: [memberId], references: [id])
+  memberId       String
+  period         String
+  coversFee      Boolean
+  feeAmount      Int
+  consumoIds     String[] // consumos incluidos al momento de pagar
+  consumosAmount Int
+  total          Int
+  status         String   @default("pending") // pending, approved, rejected
+  mpPreferenceId String?
+  mpPaymentId    String?  @unique
+  payment        Payment? @relation(fields: [paymentId], references: [id])
+  paymentId      String?  @unique
+  createdAt      DateTime @default(now())
+
+  @@index([memberId, status])
 }
 
 // Un producto que se vende (agua, barrita, bebida isotónica...)
