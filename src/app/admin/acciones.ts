@@ -28,9 +28,20 @@ export async function loginAdmin(_prev: string | null, form: FormData): Promise<
 
   // Ignoramos espacios y comillas que se cuelan al cargar la variable en Vercel
   const esperada = (process.env.ADMIN_PASSWORD ?? "").trim().replace(/^["'](.*)["']$/, "$1");
-  if (!esperada || clave !== esperada) {
+  if (!esperada) {
+    return "Falta configurar ADMIN_PASSWORD en Vercel (Variables ambientales) y hacer Redeploy.";
+  }
+  if (clave !== esperada) {
     await registrarFallo(key);
-    return "Contraseña incorrecta";
+    // Queda en los registros de Vercel para diagnosticar (sin mostrar la contraseña)
+    console.warn("Login admin fallido", {
+      caracteresEsperados: esperada.length,
+      caracteresRecibidos: clave.length,
+      soloDifiereEnMayusculas: clave.toLowerCase() === esperada.toLowerCase(),
+    });
+    return clave.toLowerCase() === esperada.toLowerCase()
+      ? "Contraseña incorrecta: revisá las mayúsculas y minúsculas"
+      : "Contraseña incorrecta";
   }
   await limpiarFallos(key);
   await iniciarSesion({ rol: "admin" });
