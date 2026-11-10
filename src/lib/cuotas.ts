@@ -5,23 +5,25 @@ import { diaDelMes, periodoActual } from "./periodo";
 export type Estado = "al_dia" | "pendiente" | "vencida" | "sin_plan";
 
 export const ESTADOS: Record<Estado, { texto: string; clase: string }> = {
-  al_dia: { texto: "Al día", clase: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" },
-  pendiente: { texto: "Pendiente", clase: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" },
-  vencida: { texto: "Vencida", clase: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300" },
-  sin_plan: { texto: "Sin plan", clase: "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300" },
+  al_dia: { texto: "Al día", clase: "bg-green-500/15 text-green-400 ring-1 ring-green-500/30" },
+  pendiente: { texto: "Pendiente", clase: "bg-yellow-500/15 text-yellow-300 ring-1 ring-yellow-500/30" },
+  vencida: { texto: "Vencida", clase: "bg-red-500/15 text-red-400 ring-1 ring-red-500/30" },
+  sin_plan: { texto: "Sin plan", clase: "bg-white/10 text-zinc-300 ring-1 ring-white/15" },
 };
 
 export const METODOS = ["efectivo", "transferencia", "tarjeta", "mercadopago"] as const;
 
 // Lee la configuración del gimnasio (la crea si no existe)
+// (no trae la imagen del logo, que es pesada: para eso está la dirección /logo)
 export async function configuracion() {
-  const cfg = await db.settings.findUnique({ where: { id: 1 } });
+  const omit = { logo: true } as const;
+  const cfg = await db.settings.findUnique({ where: { id: 1 }, omit });
   if (cfg) return cfg;
   try {
-    return await db.settings.create({ data: { id: 1 } });
+    return await db.settings.create({ data: { id: 1 }, omit });
   } catch {
     // Otra parte de la página la creó al mismo tiempo: la leemos
-    return db.settings.findUniqueOrThrow({ where: { id: 1 } });
+    return db.settings.findUniqueOrThrow({ where: { id: 1 }, omit });
   }
 }
 

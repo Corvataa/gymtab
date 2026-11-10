@@ -57,7 +57,7 @@ export default async function Socio({ params, searchParams }: Props) {
       <Avisos ok={ok} error={error} />
 
       {/* Cobro */}
-      <form action={registrarCobro} className="tarjeta flex flex-col gap-4 border-emerald-600/40">
+      <form action={registrarCobro} className="tarjeta flex flex-col gap-4 border-orange-600/40">
         <h2 className="text-lg font-semibold">Registrar cobro</h2>
         <input type="hidden" name="memberId" value={socio.id} />
         <div className="grid gap-3 sm:grid-cols-3">
@@ -216,7 +216,7 @@ export default async function Socio({ params, searchParams }: Props) {
               <div className="flex items-center gap-3">
                 <span className={c.voided ? "text-zinc-400 line-through" : "font-semibold"}>{pesos(c.unitPrice * c.quantity)}</span>
                 {c.paymentId ? (
-                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">cobrado</span>
+                  <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs text-orange-800 dark:bg-orange-950 dark:text-orange-300">cobrado</span>
                 ) : (
                   <form action={alternarAnulado}>
                     <input type="hidden" name="id" value={c.id} />

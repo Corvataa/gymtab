@@ -22,7 +22,7 @@ export default function FormResultado({ workoutId, tipo, actual }: Props) {
   if (!editando && actual) {
     return (
       <div className="flex flex-col gap-2">
-        {estado?.ok && <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">{estado.mensaje}</p>}
+        {estado?.ok && <p className="text-sm font-medium text-orange-700 dark:text-orange-400">{estado.mensaje}</p>}
         <div className="flex gap-2">
         <button onClick={() => setEditando(true)} className="btn-secundario flex-1 py-2 text-sm">Editar mi resultado</button>
         <button
@@ -92,7 +92,7 @@ export default function FormResultado({ workoutId, tipo, actual }: Props) {
         RX (lo hice como estaba escrito, sin adaptar)
       </label>
       <input name="notes" placeholder="Nota (opcional)" defaultValue={actual?.notes} maxLength={200} className="input" />
-      {estado && <p className={`text-sm ${estado.ok ? "text-emerald-700 dark:text-emerald-400" : "text-red-600"}`}>{estado.mensaje}</p>}
+      {estado && <p className={`text-sm ${estado.ok ? "text-orange-700 dark:text-orange-400" : "text-red-600"}`}>{estado.mensaje}</p>}
       <button disabled={cargando} className="btn-primario">{cargando ? "Guardando…" : "Guardar resultado"}</button>
     </form>
   );

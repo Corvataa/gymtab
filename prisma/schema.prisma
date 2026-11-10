@@ -21,6 +21,8 @@ model Settings {
   blockOverdue Boolean @default(true) // si la cuota está vencida, no puede sumar consumos ni reservar
   cancelHours  Int     @default(2) // hasta cuántas horas antes de la clase se puede cancelar
   bookingDays  Int     @default(7) // con cuántos días de anticipación se puede reservar
+  logo         String? // logo del gimnasio como imagen (data URL), se sube desde Configuración
+  logoVersion  Int     @default(0) // cambia cada vez que se sube un logo nuevo
 }
 
 // Un plan de cuota (ej: "3 veces por semana", "Libre")

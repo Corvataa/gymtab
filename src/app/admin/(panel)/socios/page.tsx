@@ -41,7 +41,7 @@ export default async function Socios({ searchParams }: Props) {
         <button className="btn-primario sm:col-span-6">+ Agregar socio</button>
       </form>
       {planes.length === 0 && (
-        <p className="-mt-2 text-sm text-amber-700 dark:text-amber-400">
+        <p className="-mt-2 text-sm text-yellow-700 dark:text-yellow-400">
           Tip: primero creá los <Link href="/admin/planes" className="underline">planes</Link> para poder asignarlos.
         </p>
       )}

@@ -44,16 +44,16 @@ export default async function Inicio({ searchParams }: Props) {
           <p className="text-2xl font-bold">{pesos(porCobrar)}</p>
           <p className="text-xs text-zinc-500">cuotas + consumos</p>
         </div>
-        <Link href={url("al_dia")} className="tarjeta hover:border-emerald-600">
+        <Link href={url("al_dia")} className="tarjeta hover:border-orange-600">
           <p className="text-sm text-zinc-500">Al día</p>
-          <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{cuenta("al_dia")}</p>
+          <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">{cuenta("al_dia")}</p>
         </Link>
         <Link href={url("vencida")} className="tarjeta hover:border-red-600">
           <p className="text-sm text-zinc-500">Vencidas · Pendientes</p>
           <p className="text-2xl font-bold">
             <span className="text-red-700 dark:text-red-400">{cuenta("vencida")}</span>
             <span className="text-zinc-400"> · </span>
-            <span className="text-amber-700 dark:text-amber-400">{cuenta("pendiente")}</span>
+            <span className="text-yellow-700 dark:text-yellow-400">{cuenta("pendiente")}</span>
           </p>
         </Link>
       </div>

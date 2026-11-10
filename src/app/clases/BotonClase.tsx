@@ -29,8 +29,8 @@ export default function BotonClase({ sessionId, bookingId, texto, tipo }: Props)
       {aviso && (
         <div
           role="status"
-          className={`fixed inset-x-4 bottom-4 z-20 mx-auto max-w-md rounded-xl px-4 py-3 text-center font-medium text-white shadow-lg ${
-            aviso.ok ? "bg-emerald-600" : "bg-red-600"
+          className={`fixed inset-x-4 bottom-24 z-40 mx-auto max-w-md rounded-xl px-4 py-3 text-center font-medium text-white shadow-lg ${
+            aviso.ok ? "bg-orange-600" : "bg-red-600"
           }`}
         >
           {aviso.mensaje}

@@ -1,17 +1,20 @@
 import { configuracion } from "@/lib/cuotas";
 import { guardarConfiguracion } from "../../acciones";
 import Avisos from "../../Avisos";
+import SubirLogo from "./SubirLogo";
+import { hayLogo } from "../../../Logo";
 
 type Props = { searchParams: Promise<{ ok?: string; error?: string }> };
 
 export default async function Configuracion({ searchParams }: Props) {
   const { ok, error } = await searchParams;
-  const cfg = await configuracion();
+  const [cfg, tieneLogo] = await Promise.all([configuracion(), hayLogo()]);
 
   return (
     <main className="flex max-w-xl flex-col gap-5">
       <h1 className="text-2xl font-bold">Configuración</h1>
       <Avisos ok={ok} error={error} />
+      <SubirLogo actual={tieneLogo ? `/logo?v=${cfg.logoVersion}` : null} />
       <form action={guardarConfiguracion} className="tarjeta flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm">
           Nombre del gimnasio

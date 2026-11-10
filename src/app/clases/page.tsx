@@ -55,10 +55,9 @@ export default async function Clases() {
   const limite = socio.plan?.classesPerWeek;
 
   return (
-    <main className="mx-auto flex max-w-md flex-col gap-5 px-4 py-6">
+    <main className="mx-auto flex max-w-md flex-col gap-5 px-4 pb-28 pt-6">
       <EncabezadoSocio titulo="Clases" />
 
-      <NavSocio activa="clases" />
 
       <section className="tarjeta">
         <p className="text-sm text-zinc-500">Esta semana</p>
@@ -67,7 +66,7 @@ export default async function Clases() {
             {limite ? `Reservaste ${usadasSemana} de ${limite} clases` : `Reservaste ${usadasSemana} clases · plan libre`}
           </p>
         ) : (
-          <p className="mt-1 font-medium text-amber-700 dark:text-amber-400">
+          <p className="mt-1 font-medium text-yellow-700 dark:text-yellow-400">
             Necesitás un plan para reservar. Consultá en recepción.
           </p>
         )}
@@ -89,7 +88,7 @@ export default async function Clases() {
               <div
                 key={c.id}
                 className={`tarjeta flex items-center justify-between gap-3 ${
-                  mia?.status === "confirmed" ? "border-emerald-600" : ""
+                  mia?.status === "confirmed" ? "border-orange-600" : ""
                 } ${c.cancelled ? "opacity-60" : ""}`}
               >
                 <div className="min-w-0">
@@ -100,9 +99,9 @@ export default async function Clases() {
                     {c.cancelled ? (
                       <span className="font-medium text-red-600">Suspendida</span>
                     ) : mia?.status === "confirmed" ? (
-                      <span className="font-medium text-emerald-700 dark:text-emerald-400">Reservada ✓</span>
+                      <span className="font-medium text-orange-700 dark:text-orange-400">Reservada ✓</span>
                     ) : mia?.status === "waitlist" ? (
-                      <span className="font-medium text-amber-700 dark:text-amber-400">
+                      <span className="font-medium text-yellow-700 dark:text-yellow-400">
                         Lista de espera · puesto {posiciones.get(c.id)}
                       </span>
                     ) : libres > 0 ? (
@@ -126,6 +125,7 @@ export default async function Clases() {
           })}
         </section>
       ))}
+      <NavSocio activa="clases" />
     </main>
   );
 }

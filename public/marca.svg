@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="80 120 480 390" role="img" aria-label="Logo">
+  <defs>
+    <filter id="brillo" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="9" />
+    </filter>
+    <g id="mitad">
+      <polygon points="108,160 316,189 316,466 309,476 262,426 262,238 162,214" />
+      <polygon points="186,228 256,244 256,283" />
+    </g>
+    <g id="t">
+      <use href="#mitad" />
+      <use href="#mitad" transform="translate(640 0) scale(-1 1)" />
+    </g>
+  </defs>
+  <use href="#t" fill="#ff8a00" filter="url(#brillo)" transform="translate(0 5)" opacity="0.95" />
+  <use href="#t" fill="#ff9f1c" />
+  <use href="#t" fill="#111111" transform="translate(320 318) scale(0.985) translate(-320 -318)" />
+</svg>

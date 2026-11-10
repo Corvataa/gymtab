@@ -63,7 +63,7 @@ export default async function Clases({ searchParams }: Props) {
                         <span className="text-red-600">suspendida</span>
                       ) : (
                         <>
-                          <span className={conf >= c.capacity ? "font-semibold text-amber-700 dark:text-amber-400" : ""}>
+                          <span className={conf >= c.capacity ? "font-semibold text-yellow-700 dark:text-yellow-400" : ""}>
                             {conf}/{c.capacity}
                           </span>
                           {espera > 0 && <span className="text-zinc-500"> +{espera} espera</span>}

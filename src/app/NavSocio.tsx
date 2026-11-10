@@ -1,28 +1,37 @@
 import Link from "next/link";
+import { IconoClases, IconoCuenta, IconoEntreno, IconoMarcas } from "./Iconos";
 
 type Tab = "cuenta" | "clases" | "entreno" | "marcas";
 
-// Pestañas del socio
+// Barra de pestañas fija abajo, como en las apps del celular
 export default function NavSocio({ activa }: { activa: Tab }) {
-  const tabs: [string, Tab, string][] = [
-    ["/tienda", "cuenta", "Mi cuenta"],
-    ["/clases", "clases", "Clases"],
-    ["/entreno", "entreno", "Entreno"],
-    ["/marcas", "marcas", "Marcas"],
-  ];
+  const tabs = [
+    { href: "/tienda", id: "cuenta", texto: "Mi cuenta", Icono: IconoCuenta },
+    { href: "/clases", id: "clases", texto: "Clases", Icono: IconoClases },
+    { href: "/entreno", id: "entreno", texto: "Entreno", Icono: IconoEntreno },
+    { href: "/marcas", id: "marcas", texto: "Marcas", Icono: IconoMarcas },
+  ] as const;
   return (
-    <nav className="flex gap-1 rounded-xl bg-zinc-200 p-1 dark:bg-zinc-800">
-      {tabs.map(([href, id, texto]) => (
-        <Link
-          key={id}
-          href={href}
-          className={`flex-1 rounded-lg py-2 text-center text-sm font-semibold transition ${
-            activa === id ? "bg-white shadow-sm dark:bg-zinc-700" : "text-zinc-500"
-          }`}
-        >
-          {texto}
-        </Link>
-      ))}
+    <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-white/10 bg-black/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg">
+      <div className="mx-auto flex max-w-md">
+        {tabs.map(({ href, id, texto, Icono }) => {
+          const on = activa === id;
+          return (
+            <Link
+              key={id}
+              href={href}
+              aria-current={on ? "page" : undefined}
+              className={`relative flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-semibold uppercase tracking-wide transition ${
+                on ? "text-orange-500" : "text-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              {on && <span className="absolute inset-x-6 top-0 h-0.5 rounded-full bg-orange-500" />}
+              <Icono className="h-6 w-6" />
+              {texto}
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }

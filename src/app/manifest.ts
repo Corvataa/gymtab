@@ -8,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Tu gimnasio: cuota, consumos, clases y entrenamiento",
     start_url: "/",
     display: "standalone",
-    background_color: "#fafafa",
-    theme_color: "#059669",
+    background_color: "#000000",
+    theme_color: "#000000",
     lang: "es-AR",
     icons: [
       { src: "/icon-192.png", sizes: "192x192", type: "image/png" },

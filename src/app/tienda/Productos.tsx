@@ -33,7 +33,7 @@ export default function Productos({ productos }: { productos: P[] }) {
               setElegido(p);
               setCantidad(1);
             }}
-            className="tarjeta flex flex-col items-start gap-1 text-left transition hover:border-emerald-600 active:scale-[0.98]"
+            className="tarjeta flex flex-col items-start gap-1 text-left transition hover:border-orange-600 active:scale-[0.98]"
           >
             <span className="text-3xl">{p.emoji}</span>
             <span className="font-medium leading-tight">{p.name}</span>
@@ -45,8 +45,8 @@ export default function Productos({ productos }: { productos: P[] }) {
       {aviso && (
         <div
           role="status"
-          className={`fixed inset-x-4 bottom-4 z-20 mx-auto max-w-md rounded-xl px-4 py-3 text-center font-medium text-white shadow-lg ${
-            aviso.ok ? "bg-emerald-600" : "bg-red-600"
+          className={`fixed inset-x-4 bottom-24 z-40 mx-auto max-w-md rounded-xl px-4 py-3 text-center font-medium text-white shadow-lg ${
+            aviso.ok ? "bg-orange-600" : "bg-red-600"
           }`}
         >
           {aviso.mensaje}
@@ -55,7 +55,7 @@ export default function Productos({ productos }: { productos: P[] }) {
 
       {elegido && (
         <div
-          className="fixed inset-0 z-10 flex items-end justify-center bg-black/40 sm:items-center"
+          className="fixed inset-0 z-30 flex items-end justify-center bg-black/40 sm:items-center"
           onClick={() => !cargando && setElegido(null)}
         >
           <div

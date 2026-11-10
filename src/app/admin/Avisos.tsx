@@ -6,7 +6,7 @@ export default function Avisos({ ok, error }: { ok?: string; error?: string }) {
       className={`mb-4 rounded-xl px-4 py-3 text-sm font-medium ${
         error
           ? "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200"
-          : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"
+          : "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200"
       }`}
     >
       {error ?? ok}

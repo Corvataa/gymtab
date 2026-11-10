@@ -30,7 +30,7 @@ export default function FormMarca({ ejercicios, hoy }: { ejercicios: string[]; h
         <input name="date" type="date" defaultValue={hoy} max={hoy} className="input" aria-label="Fecha" />
         <input name="notes" placeholder="Nota (opcional)" maxLength={200} className="input" />
       </div>
-      {estado && <p className={`text-sm font-medium ${estado.ok ? "text-emerald-700 dark:text-emerald-400" : "text-red-600"}`}>{estado.mensaje}</p>}
+      {estado && <p className={`text-sm font-medium ${estado.ok ? "text-orange-700 dark:text-orange-400" : "text-red-600"}`}>{estado.mensaje}</p>}
       <button disabled={cargando} className="btn-primario">{cargando ? "Guardando…" : "Guardar marca"}</button>
     </form>
   );

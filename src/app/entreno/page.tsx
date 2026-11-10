@@ -26,9 +26,8 @@ export default async function Entreno({ searchParams }: Props) {
   const etiquetaDia = fecha === hoy ? "Hoy" : fecha === sumarDias(hoy, -1) ? "Ayer" : nombreDia(fecha);
 
   return (
-    <main className="mx-auto flex max-w-md flex-col gap-5 px-4 py-6">
+    <main className="mx-auto flex max-w-md flex-col gap-5 px-4 pb-28 pt-6">
       <EncabezadoSocio titulo="Entrenamiento" />
-      <NavSocio activa="entreno" />
 
       <div className="flex items-center justify-between">
         <Link href={`/entreno?fecha=${sumarDias(fecha, -1)}`} className="btn-secundario px-3 py-2" aria-label="Día anterior">←</Link>
@@ -76,7 +75,7 @@ export default async function Entreno({ searchParams }: Props) {
                       <li
                         key={r.id}
                         className={`flex items-center justify-between gap-3 px-4 py-2 ${
-                          r.memberId === memberId ? "bg-emerald-50 dark:bg-emerald-950/40" : ""
+                          r.memberId === memberId ? "bg-orange-50 dark:bg-orange-950/40" : ""
                         }`}
                       >
                         <span className="flex items-center gap-2">
@@ -94,6 +93,7 @@ export default async function Entreno({ searchParams }: Props) {
           </article>
         );
       })}
+      <NavSocio activa="entreno" />
     </main>
   );
 }

@@ -1,39 +1,27 @@
-import Link from "next/link";
 import { configuracion } from "@/lib/cuotas";
 import { exigirAdmin } from "@/lib/session";
 import { salirAdmin } from "../acciones";
+import NavAdmin from "../NavAdmin";
+import Logo from "../../Logo";
 
 export const dynamic = "force-dynamic";
-
-const links = [
-  ["/admin", "Inicio"],
-  ["/admin/socios", "Socios"],
-  ["/admin/clases", "Clases"],
-  ["/admin/entrenamientos", "Entrenamientos"],
-  ["/admin/planes", "Planes"],
-  ["/admin/productos", "Productos"],
-  ["/admin/qr", "QR"],
-  ["/admin/configuracion", "Configuración"],
-];
 
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
   await exigirAdmin();
   const cfg = await configuracion();
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6">
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <div>
-          <p className="text-lg font-black tracking-tight">TUTUKAPP</p>
-          <p className="text-xs text-zinc-500">{cfg.gymName}</p>
+    <div className="mx-auto max-w-6xl px-4 py-6">
+      <header className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5 print:hidden">
+        <div className="flex items-center gap-3">
+          <Logo className="h-10" />
+          <span className="hidden border-l border-white/15 pl-3 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400 sm:block">
+            {cfg.gymName}
+          </span>
         </div>
         <nav className="flex flex-wrap items-center gap-1 text-sm">
-          {links.map(([href, label]) => (
-            <Link key={href} href={href} className="rounded-lg px-3 py-2 hover:bg-zinc-200 dark:hover:bg-zinc-800">
-              {label}
-            </Link>
-          ))}
+          <NavAdmin />
           <form action={salirAdmin}>
-            <button className="rounded-lg px-3 py-2 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-800">Salir</button>
+            <button className="rounded-lg px-3 py-2 text-zinc-500 hover:bg-white/10 hover:text-white">Salir</button>
           </form>
         </nav>
       </header>

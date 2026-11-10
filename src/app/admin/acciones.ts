@@ -391,3 +391,29 @@ export async function borrarResultadoAdmin(form: FormData) {
   await db.workoutResult.deleteMany({ where: { id: texto(form, "id") } });
   redirect(aviso(`/admin/entrenamientos/${workoutId}`, "ok", "Resultado borrado"));
 }
+
+// ---------- Logo ----------
+
+const LOGO_VALIDO = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
+
+export async function guardarLogo(form: FormData) {
+  await exigirAdmin();
+  const logo = String(form.get("logo") ?? "");
+  if (!LOGO_VALIDO.test(logo) || logo.length > 900_000) {
+    redirect(aviso("/admin/configuracion", "error", "Elegí una imagen PNG, JPG o WEBP"));
+  }
+  await db.settings.upsert({
+    where: { id: 1 },
+    create: { id: 1, logo, logoVersion: 1 },
+    update: { logo, logoVersion: { increment: 1 } },
+  });
+  revalidatePath("/", "layout");
+  redirect(aviso("/admin/configuracion", "ok", "Logo actualizado"));
+}
+
+export async function quitarLogo() {
+  await exigirAdmin();
+  await db.settings.update({ where: { id: 1 }, data: { logo: null, logoVersion: { increment: 1 } } });
+  revalidatePath("/", "layout");
+  redirect(aviso("/admin/configuracion", "ok", "Logo quitado"));
+}

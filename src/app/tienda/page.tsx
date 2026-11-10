@@ -1,12 +1,12 @@
-import Link from "next/link";
 import { db } from "@/lib/db";
 import { exigirSocio } from "@/lib/session";
 import { nombrePeriodo, periodoActual, pesos, fechaHora } from "@/lib/periodo";
 import { consumosSinCobrar, estadoSocio, ESTADOS } from "@/lib/cuotas";
-import { pagarOnline, salir, totalDelMes } from "../acciones";
+import { pagarOnline, totalDelMes } from "../acciones";
 import { mercadoPagoActivo, procesarPagoMP, type ResultadoPago } from "@/lib/mercadopago";
 import Productos from "./Productos";
 import NavSocio from "../NavSocio";
+import EncabezadoSocio from "../EncabezadoSocio";
 import BotonAnular from "./BotonAnular";
 
 export const dynamic = "force-dynamic";
@@ -56,29 +56,15 @@ export default async function Tienda({ searchParams }: Props) {
   const ahora = Date.now();
 
   return (
-    <main className="mx-auto flex max-w-md flex-col gap-5 px-4 py-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-black tracking-widest text-emerald-700 dark:text-emerald-400">TUTUKAPP</p>
-          <p className="text-sm text-zinc-500">Hola,</p>
-          <h1 className="text-xl font-bold">{socio.name.split(" ")[0]}</h1>
-        </div>
-        <div className="flex items-center gap-4 text-sm text-zinc-500">
-          <Link href="/tienda/pin" className="underline">Cambiar PIN</Link>
-          <form action={salir}>
-            <button className="underline">Salir</button>
-          </form>
-        </div>
-      </header>
-
-      <NavSocio activa="cuenta" />
+    <main className="mx-auto flex max-w-md flex-col gap-5 px-4 pb-28 pt-6">
+      <EncabezadoSocio titulo={socio.name.split(" ")[0]} subtitulo="Hola," />
 
       {mensajePago && (
         <p
           role="status"
           className={`rounded-xl px-4 py-3 text-sm font-medium ${
             mensajePago.ok
-              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"
+              ? "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200"
               : "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200"
           }`}
         >
@@ -97,7 +83,7 @@ export default async function Tienda({ searchParams }: Props) {
         <p className="text-sm text-zinc-500">
           {cuota > 0 && <>Cuota {socio.plan?.name} {pesos(cuota)} + </>}consumos {pesos(pendientes.total)}
         </p>
-        {estado === "pendiente" && <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">Vence el día {cfg.dueDay}</p>}
+        {estado === "pendiente" && <p className="mt-1 text-xs text-yellow-700 dark:text-yellow-400">Vence el día {cfg.dueDay}</p>}
         {estado === "vencida" && (
           <p className="mt-1 text-xs text-red-700 dark:text-red-400">
             Tu cuota está vencida.{cfg.blockOverdue && " Pagala para seguir sumando consumos."}
@@ -117,7 +103,7 @@ export default async function Tienda({ searchParams }: Props) {
         <p className="mt-1 text-xl font-bold">{pesos(total)}</p>
         <div className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
           <div
-            className={`h-full ${porcentaje > 85 ? "bg-amber-500" : "bg-emerald-600"}`}
+            className={`h-full ${porcentaje > 85 ? "bg-yellow-500" : "bg-orange-600"}`}
             style={{ width: `${porcentaje}%` }}
           />
         </div>
@@ -161,6 +147,7 @@ export default async function Tienda({ searchParams }: Props) {
           </ul>
         )}
       </section>
+      <NavSocio activa="cuenta" />
     </main>
   );
 }

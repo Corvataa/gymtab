@@ -28,7 +28,12 @@ Sistema para gimnasios: socios, planes, cobro de cuotas y una **cuenta de consum
 - **Configuración:** nombre del gimnasio, día de vencimiento, bloquear consumos y reservas a quien tiene la cuota vencida,
   con cuántos días se puede reservar y hasta cuántas horas antes se puede cancelar.
 
-### Cómo funcionan las cuotas
+#### Diseño y logo
+- Tema negro y naranja, tipografías Barlow Condensed (títulos) e Inter (texto).
+- El logo del gimnasio está en `public/marca.svg` (también genera los íconos de la app).
+- Desde **Configuración → Logo del gimnasio** se puede subir otro logo (PNG/JPG/WEBP); se achica solo antes de subirse.
+
+## Cómo funcionan las cuotas
 - Cada mes el socio debe la cuota de su plan. Hasta el día de vencimiento figura **Pendiente**; después, **Vencida**.
 - Al cobrar, se incluyen todos los consumos que todavía no se cobraron. Los consumos posteriores quedan para el próximo cobro.
 - Si se anula un cobro, sus consumos vuelven a quedar pendientes.

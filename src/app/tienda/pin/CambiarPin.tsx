@@ -26,7 +26,7 @@ export default function CambiarPin() {
       {campo("nuevo", "PIN nuevo (4 a 6 números)", "new-password")}
       {campo("repetido", "Repetí el PIN nuevo", "new-password")}
       {estado && (
-        <p className={`text-sm ${estado.ok ? "text-emerald-700 dark:text-emerald-400" : "text-red-600"}`}>
+        <p className={`text-sm ${estado.ok ? "text-orange-700 dark:text-orange-400" : "text-red-600"}`}>
           {estado.mensaje}
         </p>
       )}

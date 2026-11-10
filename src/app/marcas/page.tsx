@@ -25,9 +25,8 @@ export default async function Marcas() {
   const fecha = (f: string) => f.split("-").reverse().join("/");
 
   return (
-    <main className="mx-auto flex max-w-md flex-col gap-5 px-4 py-6">
+    <main className="mx-auto flex max-w-md flex-col gap-5 px-4 pb-28 pt-6">
       <EncabezadoSocio titulo="Mis marcas" />
-      <NavSocio activa="marcas" />
 
       <FormMarca ejercicios={[...EJERCICIOS, ...propios]} hoy={fechaAR(new Date())} />
 
@@ -69,6 +68,7 @@ export default async function Marcas() {
           </section>
         );
       })}
+      <NavSocio activa="marcas" />
     </main>
   );
 }
