@@ -24,10 +24,20 @@ export default async function Configuracion({ searchParams }: Props) {
             Hasta ese día la cuota figura como &quot;Pendiente&quot;; después, como &quot;Vencida&quot;.
           </span>
         </label>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="flex flex-col gap-1 text-sm">
+            Reservar con hasta (días)
+            <input name="bookingDays" defaultValue={cfg.bookingDays} inputMode="numeric" className="input" />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Cancelar hasta (horas antes)
+            <input name="cancelHours" defaultValue={cfg.cancelHours} inputMode="numeric" className="input" />
+          </label>
+        </div>
         <label className="flex items-start gap-2 text-sm">
           <input type="checkbox" name="blockOverdue" defaultChecked={cfg.blockOverdue} className="mt-0.5 h-5 w-5" />
           <span>
-            No dejar sumar consumos a socios con la cuota vencida
+            No dejar sumar consumos ni reservar clases a socios con la cuota vencida
             <span className="block text-xs text-zinc-500">Recomendado: evita que crezca la deuda de quien no paga.</span>
           </span>
         </label>

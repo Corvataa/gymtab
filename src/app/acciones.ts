@@ -9,6 +9,7 @@ import { db } from "@/lib/db";
 import { periodoActual, pesos } from "@/lib/periodo";
 import { estadoSocio } from "@/lib/cuotas";
 import { crearLinkDePago, mercadoPagoActivo } from "@/lib/mercadopago";
+import { cancelarReserva, reservar } from "@/lib/clases";
 import { headers } from "next/headers";
 import { cerrarSesion, exigirSocio, iniciarSesion } from "@/lib/session";
 import { limpiarFallos, mensajeBloqueo, minutosBloqueado, registrarFallo } from "@/lib/throttle";
@@ -147,4 +148,20 @@ export async function pagarOnline() {
     redirect("/tienda?pago=error");
   }
   redirect(link);
+}
+
+// ---------- Clases ----------
+
+export async function reservarClase(sessionId: string): Promise<Resultado> {
+  const memberId = await exigirSocio();
+  const r = await reservar(memberId, sessionId);
+  revalidatePath("/clases");
+  return r;
+}
+
+export async function cancelarMiReserva(bookingId: string): Promise<Resultado> {
+  const memberId = await exigirSocio();
+  const r = await cancelarReserva(bookingId, { memberId });
+  revalidatePath("/clases");
+  return r;
 }

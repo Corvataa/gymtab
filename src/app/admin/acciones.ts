@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { esPeriodo, periodoActual } from "@/lib/periodo";
 import { METODOS, consumosSinCobrar } from "@/lib/cuotas";
+import { cancelarReserva, horaValida, limpiarClasesFuturas } from "@/lib/clases";
 import { cerrarSesion, exigirAdmin, iniciarSesion } from "@/lib/session";
 import { ipCliente, limpiarFallos, mensajeBloqueo, minutosBloqueado, registrarFallo } from "@/lib/throttle";
 
@@ -246,12 +247,89 @@ export async function guardarConfiguracion(form: FormData) {
   await exigirAdmin();
   const dia = entero(form, "dueDay");
   if (dia < 1 || dia > 28) redirect(aviso("/admin/configuracion", "error", "El día de vencimiento debe ser entre 1 y 28"));
+  const cancelHours = entero(form, "cancelHours");
+  const bookingDays = entero(form, "bookingDays");
+  if (bookingDays < 1 || bookingDays > 30) redirect(aviso("/admin/configuracion", "error", "Los días para reservar deben ser entre 1 y 30"));
   const datos = {
     gymName: texto(form, "gymName") || "Mi gimnasio",
     dueDay: dia,
     blockOverdue: form.get("blockOverdue") === "on",
+    cancelHours: Math.min(cancelHours, 72),
+    bookingDays,
   };
   await db.settings.upsert({ where: { id: 1 }, create: { id: 1, ...datos }, update: datos });
   revalidatePath("/", "layout");
   redirect(aviso("/admin/configuracion", "ok", "Configuración guardada"));
+}
+
+// ---------- Clases ----------
+
+function datosHorario(form: FormData) {
+  const name = texto(form, "name");
+  const weekday = entero(form, "weekday");
+  const startTime = texto(form, "startTime");
+  const capacity = entero(form, "capacity");
+  const durationMin = entero(form, "durationMin") || 60;
+  if (!name || weekday < 1 || weekday > 7 || !horaValida(startTime) || capacity < 1) {
+    redirect(aviso("/admin/clases", "error", "Revisá nombre, día, horario (ej: 07:00) y cupo"));
+  }
+  return { name, weekday, startTime, capacity, durationMin, coach: opcional(form, "coach") };
+}
+
+export async function crearHorario(form: FormData) {
+  await exigirAdmin();
+  await db.classSchedule.create({ data: datosHorario(form) });
+  revalidatePath("/admin/clases");
+  redirect(aviso("/admin/clases", "ok", "Horario creado"));
+}
+
+export async function actualizarHorario(form: FormData) {
+  await exigirAdmin();
+  const id = texto(form, "id");
+  await db.classSchedule.update({
+    where: { id },
+    data: { ...datosHorario(form), active: form.get("active") === "on" },
+  });
+  // Las clases futuras sin reservas se vuelven a generar con los datos nuevos
+  await limpiarClasesFuturas(id);
+  revalidatePath("/admin/clases");
+  redirect(aviso("/admin/clases", "ok", "Horario guardado. Las clases que ya tienen reservas no cambian."));
+}
+
+export async function alternarSuspension(form: FormData) {
+  await exigirAdmin();
+  const id = texto(form, "id");
+  const c = await db.classSession.findUniqueOrThrow({ where: { id } });
+  await db.classSession.update({ where: { id }, data: { cancelled: !c.cancelled } });
+  redirect(aviso(`/admin/clases/${id}`, "ok", c.cancelled ? "Clase reactivada" : "Clase suspendida"));
+}
+
+export async function cambiarCupo(form: FormData) {
+  await exigirAdmin();
+  const id = texto(form, "id");
+  const capacity = entero(form, "capacity");
+  if (capacity < 1) redirect(aviso(`/admin/clases/${id}`, "error", "Cupo inválido"));
+  await db.classSession.update({ where: { id }, data: { capacity } });
+  redirect(aviso(`/admin/clases/${id}`, "ok", "Cupo actualizado"));
+}
+
+// Recepción anota a un socio (puede pasar el cupo)
+export async function anotarSocio(form: FormData) {
+  await exigirAdmin();
+  const sessionId = texto(form, "sessionId");
+  const memberId = texto(form, "memberId");
+  if (!memberId) redirect(aviso(`/admin/clases/${sessionId}`, "error", "Elegí un socio"));
+  await db.booking.upsert({
+    where: { sessionId_memberId: { sessionId, memberId } },
+    create: { sessionId, memberId, status: "confirmed" },
+    update: { status: "confirmed", cancelledAt: null },
+  });
+  redirect(aviso(`/admin/clases/${sessionId}`, "ok", "Socio anotado"));
+}
+
+export async function quitarReserva(form: FormData) {
+  await exigirAdmin();
+  const sessionId = texto(form, "sessionId");
+  const r = await cancelarReserva(texto(form, "bookingId"), { sinLimiteDeTiempo: true });
+  redirect(aviso(`/admin/clases/${sessionId}`, r.ok ? "ok" : "error", r.mensaje));
 }

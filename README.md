@@ -9,16 +9,20 @@ Sistema para gimnasios: socios, planes, cobro de cuotas y una **cuenta de consum
 - Entra con su DNI y un PIN (y lo puede cambiar).
 - Ve el estado de su cuota (al día, pendiente o vencida) y cuánto le toca pagar: cuota + consumos.
 - **Paga online con Mercado Pago** y queda al día automáticamente.
+- **Reserva clases**: ve los lugares libres, reserva, cancela o se anota en lista de espera.
 - Toca el producto que sacó, elige la cantidad y confirma. Puede anularlo durante 10 minutos.
 
 **Administración** (`/admin`):
 - **Inicio:** cuotas del mes: cobrado, falta cobrar, socios al día, pendientes y vencidos. Planilla CSV.
 - **Socios:** alta con plan, datos de contacto, tope de consumos, pausar, cambiar PIN.
   En la ficha de cada socio: **registrar cobro** (cuota + consumos sin cobrar, medio de pago), historial y anulación de cobros.
+- **Clases:** horarios semanales (día, hora, cupo, coach), agenda de los próximos 7 días,
+  lista de anotados y de espera, anotar o quitar socios, cambiar el cupo o suspender una clase.
 - **Planes:** opciones de cuota (ej: 3 veces por semana, libre) con su precio.
 - **Productos:** lo que se vende y su precio.
 - **QR:** cartel para imprimir.
-- **Configuración:** nombre del gimnasio, día de vencimiento, bloquear consumos a quien tiene la cuota vencida.
+- **Configuración:** nombre del gimnasio, día de vencimiento, bloquear consumos y reservas a quien tiene la cuota vencida,
+  con cuántos días se puede reservar y hasta cuántas horas antes se puede cancelar.
 
 ### Cómo funcionan las cuotas
 - Cada mes el socio debe la cuota de su plan. Hasta el día de vencimiento figura **Pendiente**; después, **Vencida**.
@@ -48,6 +52,14 @@ Sistema para gimnasios: socios, planes, cobro de cuotas y una **cuenta de consum
 4. Entrá a `https://tu-app.vercel.app/admin`, cargá productos y socios, e imprimí el QR.
 
 Cada vez que se sube un cambio a GitHub, Vercel publica la nueva versión automáticamente.
+
+### Cómo funcionan las reservas
+- Las clases se generan solas a partir de los horarios semanales.
+- Si hay lugar, la reserva queda confirmada; si no, el socio queda en lista de espera.
+- Si alguien cancela, el primero de la lista de espera entra automáticamente.
+- El plan limita cuántas clases por semana (lunes a domingo) puede reservar cada socio. Las clases suspendidas no cuentan.
+- El socio puede cancelar hasta X horas antes (configurable). Después, solo recepción puede quitarlo.
+- Si dos socios reservan el último lugar al mismo tiempo, solo uno lo obtiene.
 
 ## Activar pagos con Mercado Pago
 
@@ -86,7 +98,7 @@ npm run dev                 # arranca la app en http://localhost:3000
 
 ```
 prisma/
-  schema.prisma        ← las tablas: Settings, Plan, Member (socios), Payment (cobros), Checkout (pagos online), Product, Consumption (consumos), LoginThrottle
+  schema.prisma        ← las tablas: Settings, Plan, Member (socios), Payment (cobros), Checkout (pagos online), ClassSchedule (horarios), ClassSession (clases), Booking (reservas), Product, Consumption (consumos), LoginThrottle
   migrations/          ← historial de cambios a las tablas (se aplican al publicar)
   seed.ts              ← datos de ejemplo
 src/
@@ -97,17 +109,20 @@ src/
     periodo.ts         ← fechas, meses y formato de pesos
     cuotas.ts          ← estado de cuota de cada socio y montos a cobrar
     mercadopago.ts     ← crear links de pago y confirmar pagos aprobados
+    clases.ts          ← generar clases, reservar, cancelar y lista de espera
   app/                 ← cada carpeta es una página (dirección web)
     page.tsx           ← "/"  login del socio
     acciones.ts        ← lo que puede hacer un socio (entrar, anotar, anular)
     tienda/            ← "/tienda"  pantalla principal del socio
       pin/             ← "/tienda/pin"  el socio cambia su PIN
+    clases/            ← "/clases"  el socio reserva clases
     admin/
       acciones.ts      ← lo que puede hacer el admin
       login/           ← "/admin/login"
       (panel)/         ← páginas del panel (el paréntesis no aparece en la URL)
         page.tsx       ← "/admin" resumen del mes
         socios/        ← "/admin/socios" y "/admin/socios/[id]" (ficha + cobros)
+        clases/        ← "/admin/clases" horarios y agenda; "/admin/clases/[id]" anotados
         planes/
         configuracion/
         productos/
@@ -130,6 +145,6 @@ Conceptos clave para ir aprendiendo:
 - [x] El socio puede cambiar su propio PIN.
 - [x] Planes, cobro de cuotas con consumos incluidos, estados al día / pendiente / vencida.
 - [x] Cobro online con Mercado Pago.
-- [ ] Reservas de clases con cupos.
+- [x] Reservas de clases con cupos, lista de espera y límite semanal por plan.
 - [ ] Entrenamiento del día y registro de marcas.
 - [ ] Avisos de vencimiento (email o WhatsApp).

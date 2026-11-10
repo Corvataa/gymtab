@@ -18,7 +18,9 @@ model Settings {
   id           Int     @id @default(1)
   gymName      String  @default("Mi gimnasio")
   dueDay       Int     @default(10) // día del mes en que vence la cuota
-  blockOverdue Boolean @default(true) // si la cuota está vencida, no puede sumar consumos
+  blockOverdue Boolean @default(true) // si la cuota está vencida, no puede sumar consumos ni reservar
+  cancelHours  Int     @default(2) // hasta cuántas horas antes de la clase se puede cancelar
+  bookingDays  Int     @default(7) // con cuántos días de anticipación se puede reservar
 }
 
 // Un plan de cuota (ej: "3 veces por semana", "Libre")
@@ -48,6 +50,7 @@ model Member {
   consumptions Consumption[]
   payments     Payment[]
   checkouts    Checkout[]
+  bookings     Booking[]
 }
 
 // Un cobro: la cuota de un mes + los consumos que estaban pendientes
@@ -131,4 +134,50 @@ model LoginThrottle {
   failures    Int       @default(0)
   lockedUntil DateTime?
   updatedAt   DateTime  @updatedAt
+}
+
+// Un horario fijo semanal (ej: "Lunes 07:00 CrossTraining, 15 lugares")
+model ClassSchedule {
+  id          String         @id @default(cuid())
+  name        String
+  weekday     Int // 1 = lunes ... 7 = domingo
+  startTime   String // "07:00"
+  durationMin Int            @default(60)
+  capacity    Int            @default(15)
+  coach       String?
+  active      Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  sessions    ClassSession[]
+}
+
+// Una clase concreta en una fecha (se generan solas a partir de los horarios)
+model ClassSession {
+  id          String         @id @default(cuid())
+  schedule    ClassSchedule? @relation(fields: [scheduleId], references: [id])
+  scheduleId  String?
+  name        String
+  startsAt    DateTime
+  durationMin Int
+  capacity    Int
+  coach       String?
+  cancelled   Boolean        @default(false) // suspendida por el gimnasio
+  bookings    Booking[]
+
+  @@unique([scheduleId, startsAt])
+  @@index([startsAt])
+}
+
+// La reserva de un socio para una clase
+model Booking {
+  id          String       @id @default(cuid())
+  session     ClassSession @relation(fields: [sessionId], references: [id])
+  sessionId   String
+  member      Member       @relation(fields: [memberId], references: [id])
+  memberId    String
+  status      String // confirmed (tiene lugar), waitlist (lista de espera), cancelled
+  createdAt   DateTime     @default(now())
+  cancelledAt DateTime?
+
+  @@unique([sessionId, memberId])
+  @@index([memberId, status])
 }

@@ -28,6 +28,15 @@ async function main() {
     update: {},
     create: { name: "Socio Demo", dni: "30111222", planId: plan.id, pinHash: await bcrypt.hash("1234", 10) },
   });
+  if ((await db.classSchedule.count()) === 0) {
+    const horarios = [];
+    for (let dia = 1; dia <= 5; dia++) {
+      horarios.push({ name: "CrossTraining", weekday: dia, startTime: "07:00", capacity: 12, coach: "Coach Demo" });
+      horarios.push({ name: "Funcional", weekday: dia, startTime: "19:00", capacity: 15 });
+    }
+    horarios.push({ name: "Open Box", weekday: 6, startTime: "10:00", capacity: 20, durationMin: 90 });
+    await db.classSchedule.createMany({ data: horarios });
+  }
   console.log("Listo. Socio de prueba: DNI 30111222, PIN 1234");
 }
 

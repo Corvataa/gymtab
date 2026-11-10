@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 const links = [
   ["/admin", "Inicio"],
   ["/admin/socios", "Socios"],
+  ["/admin/clases", "Clases"],
   ["/admin/planes", "Planes"],
   ["/admin/productos", "Productos"],
   ["/admin/qr", "QR"],

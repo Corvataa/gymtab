@@ -15,7 +15,14 @@ export const METODOS = ["efectivo", "transferencia", "tarjeta", "mercadopago"] a
 
 // Lee la configuración del gimnasio (la crea si no existe)
 export async function configuracion() {
-  return db.settings.upsert({ where: { id: 1 }, create: { id: 1 }, update: {} });
+  const cfg = await db.settings.findUnique({ where: { id: 1 } });
+  if (cfg) return cfg;
+  try {
+    return await db.settings.create({ data: { id: 1 } });
+  } catch {
+    // Otra parte de la página la creó al mismo tiempo: la leemos
+    return db.settings.findUniqueOrThrow({ where: { id: 1 } });
+  }
 }
 
 // Estado de la cuota de un mes, sabiendo si está paga y el día de vencimiento

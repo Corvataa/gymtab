@@ -6,6 +6,7 @@ import { consumosSinCobrar, estadoSocio, ESTADOS } from "@/lib/cuotas";
 import { pagarOnline, salir, totalDelMes } from "../acciones";
 import { mercadoPagoActivo, procesarPagoMP, type ResultadoPago } from "@/lib/mercadopago";
 import Productos from "./Productos";
+import NavSocio from "../NavSocio";
 import BotonAnular from "./BotonAnular";
 
 export const dynamic = "force-dynamic";
@@ -69,6 +70,8 @@ export default async function Tienda({ searchParams }: Props) {
           </form>
         </div>
       </header>
+
+      <NavSocio activa="cuenta" />
 
       {mensajePago && (
         <p
