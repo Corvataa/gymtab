@@ -26,7 +26,9 @@ export async function loginAdmin(_prev: string | null, form: FormData): Promise<
   const bloqueo = await minutosBloqueado(key);
   if (bloqueo) return mensajeBloqueo(bloqueo);
 
-  if (!process.env.ADMIN_PASSWORD || clave !== process.env.ADMIN_PASSWORD) {
+  // Ignoramos espacios y comillas que se cuelan al cargar la variable en Vercel
+  const esperada = (process.env.ADMIN_PASSWORD ?? "").trim().replace(/^["'](.*)["']$/, "$1");
+  if (!esperada || clave !== esperada) {
     await registrarFallo(key);
     return "Contraseña incorrecta";
   }
