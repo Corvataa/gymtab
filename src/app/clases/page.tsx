@@ -1,9 +1,8 @@
-import Link from "next/link";
 import { db } from "@/lib/db";
 import { exigirSocio } from "@/lib/session";
 import { configuracion } from "@/lib/cuotas";
 import { asegurarClases, fechaAR, horaAR, nombreDia, rangoSemana } from "@/lib/clases";
-import { salir } from "../acciones";
+import EncabezadoSocio from "../EncabezadoSocio";
 import NavSocio from "../NavSocio";
 import BotonClase from "./BotonClase";
 
@@ -57,18 +56,7 @@ export default async function Clases() {
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-5 px-4 py-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-black tracking-widest text-emerald-700 dark:text-emerald-400">TUTUKAPP</p>
-          <h1 className="text-xl font-bold">Clases</h1>
-        </div>
-        <div className="flex items-center gap-4 text-sm text-zinc-500">
-          <Link href="/tienda/pin" className="underline">Cambiar PIN</Link>
-          <form action={salir}>
-            <button className="underline">Salir</button>
-          </form>
-        </div>
-      </header>
+      <EncabezadoSocio titulo="Clases" />
 
       <NavSocio activa="clases" />
 

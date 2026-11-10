@@ -36,21 +36,23 @@ model Plan {
 
 // Un socio del gimnasio
 model Member {
-  id           String        @id @default(cuid())
+  id           String           @id @default(cuid())
   name         String
-  dni          String        @unique
+  dni          String           @unique
   pinHash      String // el PIN se guarda encriptado, nunca en texto plano
   phone        String?
   email        String?
-  plan         Plan?         @relation(fields: [planId], references: [id])
+  plan         Plan?            @relation(fields: [planId], references: [id])
   planId       String?
-  monthlyLimit Int           @default(20000) // tope de consumo mensual en pesos
-  active       Boolean       @default(true)
-  createdAt    DateTime      @default(now())
+  monthlyLimit Int              @default(20000) // tope de consumo mensual en pesos
+  active       Boolean          @default(true)
+  createdAt    DateTime         @default(now())
   consumptions Consumption[]
   payments     Payment[]
   checkouts    Checkout[]
   bookings     Booking[]
+  results      WorkoutResult[]
+  records      PersonalRecord[]
 }
 
 // Un cobro: la cuota de un mes + los consumos que estaban pendientes
@@ -180,4 +182,48 @@ model Booking {
 
   @@unique([sessionId, memberId])
   @@index([memberId, status])
+}
+
+// Entrenamiento del día que publica el coach
+model Workout {
+  id          String          @id @default(cuid())
+  date        String // "2026-11-10"
+  title       String // ej: "WOD", "Fuerza", "Funcional"
+  description String // el entrenamiento, en texto libre
+  scoreType   String // time, reps, rounds_reps, weight, none
+  published   Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  results     WorkoutResult[]
+
+  @@index([date])
+}
+
+// Resultado de un socio en un entrenamiento
+model WorkoutResult {
+  id        String   @id @default(cuid())
+  workout   Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  workoutId String
+  member    Member   @relation(fields: [memberId], references: [id])
+  memberId  String
+  value     Int // tiempo en segundos, repeticiones, rondas*1000+reps o peso en décimas de kg
+  rx        Boolean  @default(true) // hecho como estaba escrito (sin adaptar)
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@unique([workoutId, memberId])
+}
+
+// Marca personal de un socio en un ejercicio (ej: sentadilla 100 kg)
+model PersonalRecord {
+  id        String   @id @default(cuid())
+  member    Member   @relation(fields: [memberId], references: [id])
+  memberId  String
+  movement  String
+  weight    Int // décimas de kg (1025 = 102,5 kg)
+  reps      Int      @default(1)
+  date      String // "2026-11-10"
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@index([memberId, movement])
 }

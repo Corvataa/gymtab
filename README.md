@@ -10,6 +10,8 @@ Sistema para gimnasios: socios, planes, cobro de cuotas y una **cuenta de consum
 - Ve el estado de su cuota (al día, pendiente o vencida) y cuánto le toca pagar: cuota + consumos.
 - **Paga online con Mercado Pago** y queda al día automáticamente.
 - **Reserva clases**: ve los lugares libres, reserva, cancela o se anota en lista de espera.
+- **Entreno:** ve el entrenamiento del día, carga su resultado (tiempo, reps, rondas o peso) y ve el ranking.
+- **Marcas:** registra sus marcas personales por ejercicio y ve su progreso y sus récords.
 - Toca el producto que sacó, elige la cantidad y confirma. Puede anularlo durante 10 minutos.
 
 **Administración** (`/admin`):
@@ -18,6 +20,8 @@ Sistema para gimnasios: socios, planes, cobro de cuotas y una **cuenta de consum
   En la ficha de cada socio: **registrar cobro** (cuota + consumos sin cobrar, medio de pago), historial y anulación de cobros.
 - **Clases:** horarios semanales (día, hora, cupo, coach), agenda de los próximos 7 días,
   lista de anotados y de espera, anotar o quitar socios, cambiar el cupo o suspender una clase.
+- **Entrenamientos:** el coach publica el entrenamiento de cada día (o lo programa para otro día, o lo deja en borrador)
+  y ve los resultados de los socios.
 - **Planes:** opciones de cuota (ej: 3 veces por semana, libre) con su precio.
 - **Productos:** lo que se vende y su precio.
 - **QR:** cartel para imprimir.
@@ -61,6 +65,12 @@ Cada vez que se sube un cambio a GitHub, Vercel publica la nueva versión autom�
 - El socio puede cancelar hasta X horas antes (configurable). Después, solo recepción puede quitarlo.
 - Si dos socios reservan el último lugar al mismo tiempo, solo uno lo obtiene.
 
+### Cómo funciona el entrenamiento del día
+- El socio solo ve los entrenamientos publicados de hoy o de días anteriores (lo programado para mañana no se ve antes).
+- Tipos de resultado: por tiempo (menos es mejor), repeticiones, rondas + repeticiones, peso máximo, o sin resultado.
+- En el ranking van primero los que lo hicieron **RX** (como estaba escrito) y después los que lo adaptaron.
+- En el ranking se muestra solo el nombre y la inicial del apellido.
+
 ## Activar pagos con Mercado Pago
 
 1. Entrá a [mercadopago.com.ar/developers](https://www.mercadopago.com.ar/developers) con la cuenta del gimnasio
@@ -98,7 +108,7 @@ npm run dev                 # arranca la app en http://localhost:3000
 
 ```
 prisma/
-  schema.prisma        ← las tablas: Settings, Plan, Member (socios), Payment (cobros), Checkout (pagos online), ClassSchedule (horarios), ClassSession (clases), Booking (reservas), Product, Consumption (consumos), LoginThrottle
+  schema.prisma        ← las tablas: Settings, Plan, Member (socios), Payment (cobros), Checkout (pagos online), ClassSchedule (horarios), ClassSession (clases), Booking (reservas), Workout (entrenamientos), WorkoutResult (resultados), PersonalRecord (marcas), Product, Consumption (consumos), LoginThrottle
   migrations/          ← historial de cambios a las tablas (se aplican al publicar)
   seed.ts              ← datos de ejemplo
 src/
@@ -110,12 +120,15 @@ src/
     cuotas.ts          ← estado de cuota de cada socio y montos a cobrar
     mercadopago.ts     ← crear links de pago y confirmar pagos aprobados
     clases.ts          ← generar clases, reservar, cancelar y lista de espera
+    entreno.ts         ← tipos de resultado, ranking y marcas personales
   app/                 ← cada carpeta es una página (dirección web)
     page.tsx           ← "/"  login del socio
     acciones.ts        ← lo que puede hacer un socio (entrar, anotar, anular)
     tienda/            ← "/tienda"  pantalla principal del socio
       pin/             ← "/tienda/pin"  el socio cambia su PIN
     clases/            ← "/clases"  el socio reserva clases
+    entreno/           ← "/entreno"  entrenamiento del día, resultado y ranking
+    marcas/            ← "/marcas"  marcas personales
     admin/
       acciones.ts      ← lo que puede hacer el admin
       login/           ← "/admin/login"
@@ -123,6 +136,7 @@ src/
         page.tsx       ← "/admin" resumen del mes
         socios/        ← "/admin/socios" y "/admin/socios/[id]" (ficha + cobros)
         clases/        ← "/admin/clases" horarios y agenda; "/admin/clases/[id]" anotados
+        entrenamientos/ ← "/admin/entrenamientos" publicar entrenamientos y ver resultados
         planes/
         configuracion/
         productos/
@@ -146,5 +160,5 @@ Conceptos clave para ir aprendiendo:
 - [x] Planes, cobro de cuotas con consumos incluidos, estados al día / pendiente / vencida.
 - [x] Cobro online con Mercado Pago.
 - [x] Reservas de clases con cupos, lista de espera y límite semanal por plan.
-- [ ] Entrenamiento del día y registro de marcas.
+- [x] Entrenamiento del día, ranking y marcas personales.
 - [ ] Avisos de vencimiento (email o WhatsApp).

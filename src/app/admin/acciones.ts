@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { esPeriodo, periodoActual } from "@/lib/periodo";
 import { METODOS, consumosSinCobrar } from "@/lib/cuotas";
 import { cancelarReserva, horaValida, limpiarClasesFuturas } from "@/lib/clases";
+import { esTipo } from "@/lib/entreno";
 import { cerrarSesion, exigirAdmin, iniciarSesion } from "@/lib/session";
 import { ipCliente, limpiarFallos, mensajeBloqueo, minutosBloqueado, registrarFallo } from "@/lib/throttle";
 
@@ -332,4 +333,48 @@ export async function quitarReserva(form: FormData) {
   const sessionId = texto(form, "sessionId");
   const r = await cancelarReserva(texto(form, "bookingId"), { sinLimiteDeTiempo: true });
   redirect(aviso(`/admin/clases/${sessionId}`, r.ok ? "ok" : "error", r.mensaje));
+}
+
+// ---------- Entrenamientos ----------
+
+function datosEntreno(form: FormData, volver: string) {
+  const date = texto(form, "date");
+  const title = texto(form, "title");
+  const description = String(form.get("description") ?? "").trim();
+  const scoreType = texto(form, "scoreType");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !title || !description || !esTipo(scoreType)) {
+    redirect(aviso(volver, "error", "Completá fecha, título, entrenamiento y tipo de resultado"));
+  }
+  return { date, title, description, scoreType, published: form.get("published") === "on" };
+}
+
+export async function crearEntreno(form: FormData) {
+  await exigirAdmin();
+  const w = await db.workout.create({ data: datosEntreno(form, "/admin/entrenamientos/nuevo") });
+  redirect(aviso(`/admin/entrenamientos/${w.id}`, "ok", "Entrenamiento creado"));
+}
+
+export async function actualizarEntreno(form: FormData) {
+  await exigirAdmin();
+  const id = texto(form, "id");
+  const actual = await db.workout.findUniqueOrThrow({ where: { id }, include: { _count: { select: { results: true } } } });
+  const datos = datosEntreno(form, `/admin/entrenamientos/${id}`);
+  if (actual._count.results > 0 && datos.scoreType !== actual.scoreType) {
+    redirect(aviso(`/admin/entrenamientos/${id}`, "error", "Ya hay resultados cargados: no se puede cambiar el tipo de resultado"));
+  }
+  await db.workout.update({ where: { id }, data: datos });
+  redirect(aviso(`/admin/entrenamientos/${id}`, "ok", "Entrenamiento guardado"));
+}
+
+export async function borrarEntreno(form: FormData) {
+  await exigirAdmin();
+  await db.workout.delete({ where: { id: texto(form, "id") } });
+  redirect(aviso("/admin/entrenamientos", "ok", "Entrenamiento borrado"));
+}
+
+export async function borrarResultadoAdmin(form: FormData) {
+  await exigirAdmin();
+  const workoutId = texto(form, "workoutId");
+  await db.workoutResult.deleteMany({ where: { id: texto(form, "id") } });
+  redirect(aviso(`/admin/entrenamientos/${workoutId}`, "ok", "Resultado borrado"));
 }

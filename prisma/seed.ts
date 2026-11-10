@@ -37,6 +37,17 @@ async function main() {
     horarios.push({ name: "Open Box", weekday: 6, startTime: "10:00", capacity: 20, durationMin: 90 });
     await db.classSchedule.createMany({ data: horarios });
   }
+  if ((await db.workout.count()) === 0) {
+    const hoy = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(new Date());
+    await db.workout.create({
+      data: {
+        date: hoy,
+        title: "WOD",
+        scoreType: "time",
+        description: "Por tiempo, 3 rondas:\n15 sentadillas con peso\n12 flexiones de brazos\n400 m de carrera\n\nTiempo límite: 20 minutos",
+      },
+    });
+  }
   console.log("Listo. Socio de prueba: DNI 30111222, PIN 1234");
 }
 

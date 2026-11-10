@@ -9,6 +9,7 @@ const links = [
   ["/admin", "Inicio"],
   ["/admin/socios", "Socios"],
   ["/admin/clases", "Clases"],
+  ["/admin/entrenamientos", "Entrenamientos"],
   ["/admin/planes", "Planes"],
   ["/admin/productos", "Productos"],
   ["/admin/qr", "QR"],

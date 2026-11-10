@@ -9,7 +9,8 @@ import { db } from "@/lib/db";
 import { periodoActual, pesos } from "@/lib/periodo";
 import { estadoSocio } from "@/lib/cuotas";
 import { crearLinkDePago, mercadoPagoActivo } from "@/lib/mercadopago";
-import { cancelarReserva, reservar } from "@/lib/clases";
+import { cancelarReserva, fechaAR, reservar } from "@/lib/clases";
+import { esTipo, leerKilos, leerResultado } from "@/lib/entreno";
 import { headers } from "next/headers";
 import { cerrarSesion, exigirSocio, iniciarSesion } from "@/lib/session";
 import { limpiarFallos, mensajeBloqueo, minutosBloqueado, registrarFallo } from "@/lib/throttle";
@@ -164,4 +165,75 @@ export async function cancelarMiReserva(bookingId: string): Promise<Resultado> {
   const r = await cancelarReserva(bookingId, { memberId });
   revalidatePath("/clases");
   return r;
+}
+
+// ---------- Entrenamiento del día y marcas ----------
+
+export async function guardarResultado(_prev: Resultado, form: FormData): Promise<Resultado> {
+  const memberId = await exigirSocio();
+  const workoutId = String(form.get("workoutId") ?? "");
+  const w = await db.workout.findUnique({ where: { id: workoutId } });
+  if (!w || !w.published || w.date > fechaAR(new Date()) || !esTipo(w.scoreType) || w.scoreType === "none") {
+    return { ok: false, mensaje: "Este entrenamiento no admite resultados" };
+  }
+  const value = leerResultado(w.scoreType, form);
+  if (value === null) {
+    const ayuda: Record<string, string> = {
+      time: "Escribí el tiempo como minutos:segundos, ej: 12:34",
+      reps: "Escribí la cantidad de repeticiones",
+      rounds_reps: "Escribí las rondas y las repeticiones extra",
+      weight: "Escribí el peso en kg, ej: 72,5",
+    };
+    return { ok: false, mensaje: ayuda[w.scoreType] };
+  }
+  const datos = {
+    value,
+    rx: form.get("rx") === "on",
+    notes: String(form.get("notes") ?? "").trim().slice(0, 200) || null,
+  };
+  await db.workoutResult.upsert({
+    where: { workoutId_memberId: { workoutId, memberId } },
+    create: { workoutId, memberId, ...datos },
+    update: datos,
+  });
+  revalidatePath("/entreno");
+  return { ok: true, mensaje: "¡Resultado guardado!" };
+}
+
+export async function borrarMiResultado(workoutId: string) {
+  const memberId = await exigirSocio();
+  await db.workoutResult.deleteMany({ where: { workoutId, memberId } });
+  revalidatePath("/entreno");
+}
+
+export async function agregarMarca(_prev: Resultado, form: FormData): Promise<Resultado> {
+  const memberId = await exigirSocio();
+  const elegido = String(form.get("movement") ?? "");
+  const movement = (elegido === "otro" ? String(form.get("otro") ?? "") : elegido).trim().slice(0, 60);
+  const weight = leerKilos(String(form.get("kilos") ?? ""));
+  const reps = Number(form.get("reps") || 1);
+  const date = String(form.get("date") ?? "") || fechaAR(new Date());
+  if (!movement) return { ok: false, mensaje: "Elegí o escribí el ejercicio" };
+  if (weight === null) return { ok: false, mensaje: "Escribí el peso en kg, ej: 72,5" };
+  if (!Number.isInteger(reps) || reps < 1 || reps > 30) return { ok: false, mensaje: "Las repeticiones van de 1 a 30" };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date > fechaAR(new Date())) return { ok: false, mensaje: "Fecha inválida" };
+
+  // ¿Es una mejora? Comparamos contra la mejor marca con la misma cantidad de repeticiones
+  const mejor = await db.personalRecord.findFirst({
+    where: { memberId, movement, reps },
+    orderBy: { weight: "desc" },
+  });
+  await db.personalRecord.create({
+    data: { memberId, movement, weight, reps, date, notes: String(form.get("notes") ?? "").trim().slice(0, 200) || null },
+  });
+  revalidatePath("/marcas");
+  return mejor && weight <= mejor.weight
+    ? { ok: true, mensaje: "Marca guardada" }
+    : { ok: true, mensaje: mejor ? "¡Nuevo récord personal! 🎉" : "¡Primera marca guardada!" };
+}
+
+export async function borrarMarca(id: string) {
+  const memberId = await exigirSocio();
+  await db.personalRecord.deleteMany({ where: { id, memberId } });
+  revalidatePath("/marcas");
 }
