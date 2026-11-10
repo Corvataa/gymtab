@@ -4,6 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "TUTUKAPP",
   description: "Tu gimnasio: cuota, consumos y más",
+  appleWebApp: { capable: true, title: "TUTUKAPP", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
