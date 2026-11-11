@@ -1,11 +1,13 @@
 # TUTUKAPP
 
-Sistema para gimnasios: socios, planes, cobro de cuotas y una **cuenta de consumos**
-(agua, barritas, bebidas…) que se suma a la cuota en lugar de pagar en el momento.
+La app del gimnasio: los socios reservan clases, ven el entrenamiento del día, registran sus marcas,
+pagan la cuota y anotan lo que sacan de la tienda (se suma a la cuota). El gimnasio maneja todo desde un panel.
 
 ## Qué hace
 
 **Socio** (desde el celular, escaneando el QR):
+- **Crea su cuenta** desde la app; el gimnasio la aprueba desde el panel.
+- **Inicio:** resumen con su cuota, su próxima clase, el entrenamiento de hoy y lo pendiente de la tienda.
 - Entra con su DNI y un PIN (y lo puede cambiar).
 - Ve el estado de su cuota (al día, pendiente o vencida) y cuánto le toca pagar: cuota + consumos.
 - **Paga online con Mercado Pago** y queda al día automáticamente.
@@ -16,7 +18,7 @@ Sistema para gimnasios: socios, planes, cobro de cuotas y una **cuenta de consum
 
 **Administración** (`/admin`):
 - **Inicio:** cuotas del mes: cobrado, falta cobrar, socios al día, pendientes y vencidos. Planilla CSV.
-- **Socios:** alta con plan, datos de contacto, tope de consumos, pausar, cambiar PIN.
+- **Socios:** solicitudes de alta para aprobar o rechazar; alta con plan, datos de contacto, tope de consumos, pausar, cambiar PIN.
   En la ficha de cada socio: **registrar cobro** (cuota + consumos sin cobrar, medio de pago), historial y anulación de cobros.
 - **Clases:** horarios semanales (día, hora, cupo, coach), agenda de los próximos 7 días,
   lista de anotados y de espera, anotar o quitar socios, cambiar el cupo o suspender una clase.

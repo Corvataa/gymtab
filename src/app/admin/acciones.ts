@@ -417,3 +417,24 @@ export async function quitarLogo() {
   revalidatePath("/", "layout");
   redirect(aviso("/admin/configuracion", "ok", "Logo quitado"));
 }
+
+// ---------- Solicitudes de alta ----------
+
+export async function aprobarSocio(form: FormData) {
+  await exigirAdmin();
+  const id = texto(form, "id");
+  await db.member.update({
+    where: { id },
+    data: { approved: true, active: true, planId: opcional(form, "planId") },
+  });
+  revalidatePath("/admin", "layout");
+  redirect(aviso("/admin/socios", "ok", "Socio aprobado: ya puede entrar a la app"));
+}
+
+export async function rechazarSocio(form: FormData) {
+  await exigirAdmin();
+  // Solo se borran solicitudes que todavía no fueron aprobadas
+  await db.member.deleteMany({ where: { id: texto(form, "id"), approved: false } });
+  revalidatePath("/admin", "layout");
+  redirect(aviso("/admin/socios", "ok", "Solicitud rechazada"));
+}

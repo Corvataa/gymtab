@@ -81,7 +81,7 @@ export async function crearLinkDePago(memberId: string, urlBase: string): Promis
     .filter(Boolean)
     .join(" + ");
 
-  const vuelta = `${urlBase}/tienda`;
+  const vuelta = `${urlBase}/inicio`;
   const pref = await mp<{ id: string; init_point: string }>("/checkout/preferences", {
     method: "POST",
     headers: { "X-Idempotency-Key": checkout.id },

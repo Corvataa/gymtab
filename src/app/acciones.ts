@@ -13,7 +13,7 @@ import { cancelarReserva, fechaAR, reservar } from "@/lib/clases";
 import { esTipo, leerKilos, leerResultado } from "@/lib/entreno";
 import { headers } from "next/headers";
 import { cerrarSesion, exigirSocio, iniciarSesion } from "@/lib/session";
-import { limpiarFallos, mensajeBloqueo, minutosBloqueado, registrarFallo } from "@/lib/throttle";
+import { ipCliente, limpiarFallos, mensajeBloqueo, minutosBloqueado, registrarFallo } from "@/lib/throttle";
 
 export type Resultado = { ok: boolean; mensaje: string; dni?: string } | null;
 
@@ -33,11 +33,14 @@ export async function loginSocio(_prev: Resultado, form: FormData): Promise<Resu
     return { ok: false, mensaje: "DNI o PIN incorrectos", dni };
   }
   await limpiarFallos(clave);
+  if (!socio.approved) {
+    return { ok: false, mensaje: "Tu cuenta todavía no fue aprobada. Avisá en recepción para que la activen.", dni };
+  }
   if (!socio.active) {
     return { ok: false, mensaje: "Tu cuenta está pausada. Consultá en recepción.", dni };
   }
   await iniciarSesion({ rol: "socio", id: socio.id });
-  redirect("/tienda");
+  redirect("/inicio");
 }
 
 export async function cambiarMiPin(_prev: Resultado, form: FormData): Promise<Resultado> {
@@ -117,6 +120,7 @@ export async function registrarConsumo(productId: string, cantidad: number): Pro
     },
   });
   revalidatePath("/tienda");
+  revalidatePath("/inicio");
   return { ok: true, mensaje: `Anotado: ${cantidad} × ${producto.name}` };
 }
 
@@ -132,13 +136,14 @@ export async function anularConsumo(id: string): Promise<Resultado> {
   }
   await db.consumption.update({ where: { id }, data: { voided: true } });
   revalidatePath("/tienda");
+  revalidatePath("/inicio");
   return { ok: true, mensaje: "Consumo anulado" };
 }
 
 // El socio toca "Pagar con Mercado Pago": creamos el link y lo mandamos ahí
 export async function pagarOnline() {
   const memberId = await exigirSocio();
-  if (!mercadoPagoActivo()) redirect("/tienda?pago=no_disponible");
+  if (!mercadoPagoActivo()) redirect("/inicio?pago=no_disponible");
   const h = await headers();
   const urlBase = `${h.get("x-forwarded-proto") ?? "http"}://${h.get("x-forwarded-host") ?? h.get("host")}`;
   let link: string;
@@ -146,7 +151,7 @@ export async function pagarOnline() {
     link = await crearLinkDePago(memberId, urlBase);
   } catch (e) {
     console.error("No se pudo crear el pago", e);
-    redirect("/tienda?pago=error");
+    redirect("/inicio?pago=error");
   }
   redirect(link);
 }
@@ -236,4 +241,40 @@ export async function borrarMarca(id: string) {
   const memberId = await exigirSocio();
   await db.personalRecord.deleteMany({ where: { id, memberId } });
   revalidatePath("/marcas");
+}
+
+// ---------- Crear cuenta (el socio se anota solo; el gimnasio la aprueba) ----------
+
+export async function registrarse(_prev: Resultado, form: FormData): Promise<Resultado> {
+  const t = (k: string) => String(form.get(k) ?? "").trim();
+  const name = t("name").replace(/\s+/g, " ");
+  const dni = t("dni").replace(/\D/g, "");
+  const phone = t("phone") || null;
+  const email = t("email") || null;
+  const planId = t("planId") || null;
+  const pin = t("pin");
+  const datos = { ok: false, dni } as const;
+
+  // Límite de altas por conexión, para evitar que alguien cree cuentas en masa
+  const clave = `registro:${await ipCliente()}`;
+  const bloqueo = await minutosBloqueado(clave);
+  if (bloqueo) return { ...datos, mensaje: mensajeBloqueo(bloqueo) };
+
+  if (name.length < 3 || !name.includes(" ")) return { ...datos, mensaje: "Escribí tu nombre y apellido" };
+  if (dni.length < 7 || dni.length > 9) return { ...datos, mensaje: "Revisá el DNI (solo números)" };
+  if (!/^\d{4,6}$/.test(pin)) return { ...datos, mensaje: "El PIN tiene que tener de 4 a 6 números" };
+  if (pin !== t("pin2")) return { ...datos, mensaje: "Los PIN no coinciden" };
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ...datos, mensaje: "Revisá el email" };
+  if (planId && !(await db.plan.findFirst({ where: { id: planId, active: true } }))) {
+    return { ...datos, mensaje: "Elegí un plan de la lista" };
+  }
+  if (await db.member.findUnique({ where: { dni } })) {
+    return { ...datos, mensaje: "Ya existe una cuenta con ese DNI. Si olvidaste el PIN, pedí en recepción que te lo cambien." };
+  }
+
+  await db.member.create({
+    data: { name, dni, phone, email, planId, approved: false, pinHash: await bcrypt.hash(pin, 10) },
+  });
+  await registrarFallo(clave); // cuenta como un alta más desde esta conexión
+  return { ok: true, mensaje: "¡Listo! Tu cuenta fue creada. Cuando el gimnasio la apruebe, vas a poder entrar con tu DNI y PIN." };
 }

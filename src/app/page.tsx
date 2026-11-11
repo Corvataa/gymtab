@@ -7,7 +7,7 @@ import Logo, { Marca } from "./Logo";
 
 export default async function Inicio() {
   const s = await sesionActual();
-  if (s?.rol === "socio") redirect("/tienda");
+  if (s?.rol === "socio") redirect("/inicio");
   const cfg = await configuracion();
 
   return (
@@ -21,10 +21,17 @@ export default async function Inicio() {
           <Marca grande />
         </div>
         <p className="mt-2 text-sm font-semibold uppercase tracking-[0.3em] text-orange-500">{cfg.gymName}</p>
-        <p className="mt-4 text-zinc-400">Tu cuota, tus clases y tus marcas, en un solo lugar.</p>
+        <p className="mt-4 text-zinc-400">Tu gimnasio en el celular: reservá clases, seguí tus entrenamientos y tus marcas, y pagá tu cuota.</p>
       </div>
 
       <LoginSocio />
+
+      <p className="-mt-4 text-center text-sm text-zinc-400">
+        ¿Primera vez?{" "}
+        <Link href="/registro" className="font-semibold text-orange-500 underline underline-offset-4">
+          Creá tu cuenta
+        </Link>
+      </p>
 
       <Link href="/admin" className="text-center text-xs uppercase tracking-widest text-zinc-600 hover:text-zinc-400">
         Acceso administración

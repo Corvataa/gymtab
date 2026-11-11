@@ -29,3 +29,9 @@ export const IconoLlave = ({ className }: P) => (
 export const IconoSalir = ({ className }: P) => (
   <svg {...base(className)}><path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 17l5-5-5-5M15 12H3" /></svg>
 );
+export const IconoInicio = ({ className }: P) => (
+  <svg {...base(className)}><path d="M3 11.5 12 4l9 7.5M5 10v10h5v-6h4v6h5V10" /></svg>
+);
+export const IconoTienda = ({ className }: P) => (
+  <svg {...base(className)}><path d="M5 8h14l-1 12H6L5 8zM9 8V6a3 3 0 0 1 6 0v2" /></svg>
+);

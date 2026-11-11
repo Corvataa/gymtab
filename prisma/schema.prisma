@@ -48,6 +48,7 @@ model Member {
   planId       String?
   monthlyLimit Int              @default(20000) // tope de consumo mensual en pesos
   active       Boolean          @default(true)
+  approved     Boolean          @default(true) // false = se anotó solo y espera aprobación del gimnasio
   createdAt    DateTime         @default(now())
   consumptions Consumption[]
   payments     Payment[]

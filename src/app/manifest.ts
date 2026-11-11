@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "TUTUKAPP",
     short_name: "TUTUKAPP",
-    description: "Tu gimnasio: cuota, consumos, clases y entrenamiento",
+    description: "Tu gimnasio en el celular: clases, entrenamientos, marcas y cuota",
     start_url: "/",
     display: "standalone",
     background_color: "#000000",

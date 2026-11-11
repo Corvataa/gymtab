@@ -1,9 +1,9 @@
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { exigirSocio } from "@/lib/session";
 import { nombrePeriodo, periodoActual, pesos, fechaHora } from "@/lib/periodo";
-import { consumosSinCobrar, estadoSocio, ESTADOS } from "@/lib/cuotas";
-import { pagarOnline, totalDelMes } from "../acciones";
-import { mercadoPagoActivo, procesarPagoMP, type ResultadoPago } from "@/lib/mercadopago";
+import { estadoSocio } from "@/lib/cuotas";
+import { totalDelMes } from "../acciones";
 import Productos from "./Productos";
 import NavSocio from "../NavSocio";
 import EncabezadoSocio from "../EncabezadoSocio";
@@ -11,37 +11,22 @@ import BotonAnular from "./BotonAnular";
 
 export const dynamic = "force-dynamic";
 
-type Props = { searchParams: Promise<{ payment_id?: string; pago?: string }> };
+type Props = { searchParams: Promise<Record<string, string | undefined>> };
 
-const MENSAJES_PAGO: Record<string, { texto: string; ok: boolean }> = {
-  aprobado: { texto: "¡Pago aprobado! Ya quedó registrado.", ok: true },
-  pendiente: { texto: "Tu pago está en proceso. Cuando Mercado Pago lo apruebe, se registra solo.", ok: true },
-  rechazado: { texto: "El pago fue rechazado. Probá con otro medio de pago.", ok: false },
-  desconocido: { texto: "No pudimos verificar el pago. Si te lo cobraron, avisá en recepción.", ok: false },
-  error: { texto: "No se pudo iniciar el pago. Probá de nuevo en unos minutos.", ok: false },
-  no_disponible: { texto: "El pago online todavía no está habilitado en este gimnasio.", ok: false },
-};
-
+// Tienda: el socio anota lo que saca (agua, bebidas…) y se suma a su cuota
 export default async function Tienda({ searchParams }: Props) {
   const memberId = await exigirSocio();
-  const periodo = periodoActual();
 
-  // Si vuelve de Mercado Pago, verificamos el pago antes de mostrar la pantalla
-  const { payment_id, pago: avisoPago } = await searchParams;
-  let resultado: ResultadoPago | string | undefined = avisoPago;
-  if (payment_id && mercadoPagoActivo()) {
-    try {
-      resultado = await procesarPagoMP(payment_id);
-    } catch (e) {
-      console.error("Error verificando pago", e);
-      resultado = "pendiente";
-    }
+  // Los pagos de Mercado Pago ahora vuelven a /inicio: reenviamos los que llegan acá
+  const params = await searchParams;
+  if (params.payment_id || params.pago) {
+    const q = new URLSearchParams(Object.entries(params).filter((e): e is [string, string] => !!e[1]));
+    redirect(`/inicio?${q}`);
   }
-  const mensajePago = resultado ? MENSAJES_PAGO[resultado] : undefined;
 
-  const [{ socio, pago, estado, cfg }, pendientes, productos, consumos, total] = await Promise.all([
+  const periodo = periodoActual();
+  const [{ socio, estado, cfg }, productos, consumos, total] = await Promise.all([
     estadoSocio(memberId, periodo),
-    consumosSinCobrar(memberId),
     db.product.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
     db.consumption.findMany({
       where: { memberId, period: periodo },
@@ -50,58 +35,23 @@ export default async function Tienda({ searchParams }: Props) {
     totalDelMes(memberId, periodo),
   ]);
 
-  const cuota = pago ? 0 : (socio.plan?.price ?? 0);
-  const aPagar = cuota + pendientes.total;
   const porcentaje = Math.min(100, Math.round((total / socio.monthlyLimit) * 100));
   const ahora = Date.now();
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-5 px-4 pb-28 pt-6">
-      <EncabezadoSocio titulo={socio.name.split(" ")[0]} subtitulo="Hola," />
+      <EncabezadoSocio titulo="Tienda" subtitulo="Lo sacás y se suma a tu cuota" />
 
-      {mensajePago && (
-        <p
-          role="status"
-          className={`rounded-xl px-4 py-3 text-sm font-medium ${
-            mensajePago.ok
-              ? "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200"
-              : "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200"
-          }`}
-        >
-          {mensajePago.texto}
+      {cfg.blockOverdue && estado === "vencida" && (
+        <p className="rounded-xl bg-red-500/15 px-4 py-3 text-sm font-medium text-red-300">
+          Tu cuota está vencida: pagala desde Inicio para seguir sumando consumos.
         </p>
       )}
 
       <section className="tarjeta">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-sm text-zinc-500">{pago ? "Tu próximo cobro" : `Tu cuota de ${nombrePeriodo(periodo)}`}</p>
-          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${ESTADOS[estado].clase}`}>
-            {ESTADOS[estado].texto}
-          </span>
-        </div>
-        <p className="mt-1 text-3xl font-bold">{pesos(aPagar)}</p>
-        <p className="text-sm text-zinc-500">
-          {cuota > 0 && <>Cuota {socio.plan?.name} {pesos(cuota)} + </>}consumos {pesos(pendientes.total)}
-        </p>
-        {estado === "pendiente" && <p className="mt-1 text-xs text-yellow-700 dark:text-yellow-400">Vence el día {cfg.dueDay}</p>}
-        {estado === "vencida" && (
-          <p className="mt-1 text-xs text-red-700 dark:text-red-400">
-            Tu cuota está vencida.{cfg.blockOverdue && " Pagala para seguir sumando consumos."}
-          </p>
-        )}
-        {aPagar > 0 && mercadoPagoActivo() && (
-          <form action={pagarOnline} className="mt-4">
-            <button className="btn w-full bg-sky-500 text-white hover:bg-sky-600">
-              Pagar {pesos(aPagar)} con Mercado Pago
-            </button>
-          </form>
-        )}
-      </section>
-
-      <section className="tarjeta">
         <p className="text-sm text-zinc-500">Consumos de {nombrePeriodo(periodo)}</p>
         <p className="mt-1 text-xl font-bold">{pesos(total)}</p>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
           <div
             className={`h-full ${porcentaje > 85 ? "bg-yellow-500" : "bg-orange-600"}`}
             style={{ width: `${porcentaje}%` }}
@@ -111,7 +61,7 @@ export default async function Tienda({ searchParams }: Props) {
       </section>
 
       <section>
-        <h2 className="mb-2 font-semibold">¿Qué sacaste?</h2>
+        <h2 className="mb-2 text-xl font-bold uppercase">¿Qué sacaste?</h2>
         {productos.length === 0 ? (
           <p className="text-sm text-zinc-500">Todavía no hay productos cargados.</p>
         ) : (
@@ -120,7 +70,7 @@ export default async function Tienda({ searchParams }: Props) {
       </section>
 
       <section>
-        <h2 className="mb-2 font-semibold">Tus consumos del mes</h2>
+        <h2 className="mb-2 text-xl font-bold uppercase">Tus consumos del mes</h2>
         {consumos.length === 0 ? (
           <p className="text-sm text-zinc-500">Nada por ahora.</p>
         ) : (
@@ -147,7 +97,7 @@ export default async function Tienda({ searchParams }: Props) {
           </ul>
         )}
       </section>
-      <NavSocio activa="cuenta" />
+      <NavSocio activa="tienda" />
     </main>
   );
 }

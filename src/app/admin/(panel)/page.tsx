@@ -2,13 +2,17 @@ import Link from "next/link";
 import { ESTADOS, resumenSocios, type Estado } from "@/lib/cuotas";
 import { esPeriodo, nombrePeriodo, periodoActual, periodosCobro, pesos } from "@/lib/periodo";
 import EtiquetaEstado from "../Estado";
+import { db } from "@/lib/db";
 
 type Props = { searchParams: Promise<{ periodo?: string; estado?: string }> };
 
 export default async function Inicio({ searchParams }: Props) {
   const { periodo: p, estado: filtro } = await searchParams;
   const periodo = esPeriodo(p) ? p : periodoActual();
-  const { filas, pagos, cfg } = await resumenSocios(periodo);
+  const [{ filas, pagos, cfg }, solicitudes] = await Promise.all([
+    resumenSocios(periodo),
+    db.member.count({ where: { approved: false } }),
+  ]);
 
   const cuenta = (e: Estado) => filas.filter((f) => f.estado === e).length;
   const cobrado = pagos.reduce((s, x) => s + x.total, 0);
@@ -18,6 +22,17 @@ export default async function Inicio({ searchParams }: Props) {
 
   return (
     <main className="flex flex-col gap-5">
+      {solicitudes > 0 && (
+        <Link
+          href="/admin/socios"
+          className="flex items-center justify-between gap-3 rounded-2xl border border-orange-500/50 bg-orange-500/10 px-4 py-3 font-semibold hover:bg-orange-500/20"
+        >
+          <span>
+            Tenés <span className="text-orange-500">{solicitudes}</span> solicitud{solicitudes === 1 ? "" : "es"} de alta para revisar
+          </span>
+          <span aria-hidden>→</span>
+        </Link>
+      )}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Cuotas de {nombrePeriodo(periodo)}</h1>

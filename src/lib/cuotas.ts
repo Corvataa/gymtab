@@ -64,7 +64,7 @@ export async function estadoSocio(memberId: string, periodo = periodoActual()) {
 // Para el panel: estado y montos de todos los socios activos en un mes
 export async function resumenSocios(periodo: string) {
   const [socios, pagos, pendientes, cfg] = await Promise.all([
-    db.member.findMany({ where: { active: true }, include: { plan: true }, orderBy: { name: "asc" } }),
+    db.member.findMany({ where: { active: true, approved: true }, include: { plan: true }, orderBy: { name: "asc" } }),
     db.payment.findMany({ where: { period: periodo, voided: false } }),
     db.consumption.findMany({
       where: { voided: false, paymentId: null },

@@ -7,7 +7,7 @@ const texto = Inter({ subsets: ["latin"], variable: "--font-texto" });
 
 export const metadata: Metadata = {
   title: "TUTUKAPP",
-  description: "Tu gimnasio: cuota, consumos, clases y entrenamiento",
+  description: "Tu gimnasio en el celular: clases, entrenamientos, marcas y cuota",
   appleWebApp: { capable: true, title: "TUTUKAPP", statusBarStyle: "black-translucent" },
 };
 
