@@ -4,6 +4,7 @@ import { sesionActual } from "@/lib/session";
 import { configuracion } from "@/lib/cuotas";
 import LoginSocio from "./LoginSocio";
 import Logo, { Marca } from "./Logo";
+import CartelInstalar from "./CartelInstalar";
 
 export default async function Inicio() {
   const s = await sesionActual();
@@ -36,6 +37,8 @@ export default async function Inicio() {
       <Link href="/admin" className="text-center text-xs uppercase tracking-widest text-zinc-600 hover:text-zinc-400">
         Acceso administración
       </Link>
+
+      <CartelInstalar />
     </main>
   );
 }

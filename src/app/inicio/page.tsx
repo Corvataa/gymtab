@@ -10,6 +10,7 @@ import { pagarOnline } from "../acciones";
 import EncabezadoSocio from "../EncabezadoSocio";
 import NavSocio from "../NavSocio";
 import { IconoClases, IconoEntreno, IconoTienda } from "../Iconos";
+import CartelInstalar from "../CartelInstalar";
 
 export const dynamic = "force-dynamic";
 
@@ -179,6 +180,7 @@ export default async function Inicio({ searchParams }: Props) {
         <span className="text-orange-500" aria-hidden>→</span>
       </Link>
 
+      <CartelInstalar conBarra />
       <NavSocio activa="inicio" />
     </main>
   );
