@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { METODOS, calcularEstado, configuracion, consumosSinCobrar } from "@/lib/cuotas";
+import { METODOS, NOMBRE_METODO, calcularEstado, configuracion, consumosSinCobrar } from "@/lib/cuotas";
 import { esPeriodo, fechaHora, nombrePeriodo, periodoActual, periodoSiguiente, periodosCobro, pesos, ultimosPeriodos } from "@/lib/periodo";
 import { actualizarSocio, agregarConsumoAdmin, alternarAnulado, anularCobro, cambiarPin, registrarCobro } from "../../../acciones";
 import Avisos from "../../../Avisos";
@@ -11,12 +11,6 @@ type Props = {
   searchParams: Promise<{ ok?: string; error?: string; periodo?: string }>;
 };
 
-const NOMBRE_METODO: Record<string, string> = {
-  efectivo: "Efectivo",
-  transferencia: "Transferencia",
-  tarjeta: "Tarjeta",
-  mercadopago: "Mercado Pago",
-};
 
 export default async function Socio({ params, searchParams }: Props) {
   const { id } = await params;

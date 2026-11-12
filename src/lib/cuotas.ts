@@ -11,7 +11,15 @@ export const ESTADOS: Record<Estado, { texto: string; clase: string }> = {
   sin_plan: { texto: "Sin plan", clase: "bg-white/10 text-zinc-300 ring-1 ring-white/15" },
 };
 
-export const METODOS = ["efectivo", "transferencia", "tarjeta", "mercadopago"] as const;
+export const METODOS = ["efectivo", "transferencia", "tarjeta", "mercadopago", "externo"] as const;
+
+export const NOMBRE_METODO: Record<string, string> = {
+  efectivo: "Efectivo",
+  transferencia: "Transferencia",
+  tarjeta: "Tarjeta",
+  mercadopago: "Mercado Pago",
+  externo: "Pagado fuera de la app",
+};
 
 // Lee la configuración del gimnasio (la crea si no existe)
 // (no trae la imagen del logo, que es pesada: para eso está la dirección /logo)

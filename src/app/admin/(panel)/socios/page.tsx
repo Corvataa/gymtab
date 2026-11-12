@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { resumenSocios } from "@/lib/cuotas";
-import { periodoActual, pesos } from "@/lib/periodo";
-import { aprobarActivacion, aprobarSocio, asignarPlanVarios, crearSocio, rechazarActivacion, rechazarSocio } from "../../acciones";
+import { nombrePeriodo, periodoActual, periodosCobro, pesos } from "@/lib/periodo";
+import { aprobarActivacion, aprobarSocio, asignarPlanVarios, crearSocio, marcarCuotaPagaVarios, rechazarActivacion, rechazarSocio } from "../../acciones";
 import Avisos from "../../Avisos";
 import EtiquetaEstado from "../../Estado";
+import MarcarTodos from "./MarcarTodos";
 
 type Props = { searchParams: Promise<{ ok?: string; error?: string; q?: string; filtro?: string }> };
 
@@ -167,18 +168,36 @@ export default async function Socios({ searchParams }: Props) {
         ))}
       </div>
 
-      {/* Asignar plan a los socios marcados */}
-      <form id="asignar" action={asignarPlanVarios} className="tarjeta flex flex-wrap items-center gap-2 py-3">
+      {/* Acciones sobre los socios marcados en la lista */}
+      <form id="asignar" action={asignarPlanVarios} className="tarjeta flex flex-col gap-3 py-3">
         <input type="hidden" name="filtro" value={filtro} />
-        <span className="text-sm text-zinc-400">Marcá socios en la lista y asignales un plan:</span>
-        <select name="planId" className="input w-auto py-2 text-sm" aria-label="Plan a asignar" defaultValue={planes[0]?.id ?? ""}>
-          {planes.map((p) => (
-            <option key={p.id} value={p.id}>{p.name} — {pesos(p.price)}</option>
-          ))}
-          <option value="">Quitar plan</option>
-        </select>
-        <button className="btn-primario py-2 text-sm">Asignar plan</button>
+        <p className="text-sm text-zinc-400">Marcá socios en la lista y después elegí qué hacer:</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <select name="planId" className="input w-auto py-2 text-sm" aria-label="Plan a asignar" defaultValue={planes[0]?.id ?? ""}>
+            {planes.map((p) => (
+              <option key={p.id} value={p.id}>{p.name} — {pesos(p.price)}</option>
+            ))}
+            <option value="">Quitar plan</option>
+          </select>
+          <button className="btn-primario py-2 text-sm">Asignar plan</button>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
+          <select name="period" className="input w-auto py-2 text-sm" aria-label="Mes" defaultValue={periodoActual()}>
+            {periodosCobro().map((x) => (
+              <option key={x} value={x}>Cuota de {nombrePeriodo(x)}</option>
+            ))}
+          </select>
+          <button formAction={marcarCuotaPagaVarios} className="btn-secundario py-2 text-sm">
+            ✓ Marcar cuota pagada
+          </button>
+          <span className="text-xs text-zinc-500">Para quienes ya pagaron por fuera de la app. Se puede anular desde la ficha.</span>
+        </div>
+        <label className="flex items-center gap-2 text-sm text-zinc-400">
+          <input type="checkbox" className="h-5 w-5 accent-orange-500" data-marcar-todos aria-label="Marcar todos" />
+          Marcar todos los de la lista ({socios.length})
+        </label>
       </form>
+      <MarcarTodos />
 
       <ul className="tarjeta divide-y divide-white/10 p-0">
         {socios.length === 0 && <li className="p-4 text-zinc-500">No hay socios en esta lista.</li>}

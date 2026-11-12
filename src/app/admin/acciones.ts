@@ -19,7 +19,7 @@ const opcional = (f: FormData, k: string) => texto(f, k) || null;
 
 // Arma la URL de vuelta con un mensaje (?ok=... o ?error=...), codificando tildes y espacios
 const aviso = (ruta: string, tipo: "ok" | "error", mensaje: string) =>
-  `${ruta}?${new URLSearchParams({ [tipo]: mensaje })}`;
+  `${ruta}${ruta.includes("?") ? "&" : "?"}${new URLSearchParams({ [tipo]: mensaje })}`;
 
 export async function loginAdmin(_prev: string | null, form: FormData): Promise<string | null> {
   const clave = texto(form, "clave");
@@ -589,6 +589,40 @@ export async function asignarPlanVarios(form: FormData) {
   if (!ids.length) redirect(aviso(volver, "error", "Marcá al menos un socio"));
   const r = await db.member.updateMany({ where: { id: { in: ids } }, data: { planId } });
   revalidatePath("/admin", "layout");
-  const sep = volver.includes("?") ? "&" : "?";
-  redirect(`${volver}${sep}${new URLSearchParams({ ok: `Plan actualizado en ${r.count} socio${r.count === 1 ? "" : "s"}` })}`);
+  redirect(aviso(volver, "ok", `Plan actualizado en ${r.count} socio${r.count === 1 ? "" : "s"}`));
+}
+
+// ---------- Marcar la cuota del mes como pagada a varios socios ----------
+// Para quienes ya pagaron por fuera de la app (por ejemplo, en la aplicación anterior).
+
+export async function marcarCuotaPagaVarios(form: FormData) {
+  await exigirAdmin();
+  const ids = form.getAll("ids").map(String).filter(Boolean);
+  const periodo = texto(form, "period");
+  const volver = `/admin/socios${texto(form, "filtro") ? `?filtro=${texto(form, "filtro")}` : ""}`;
+  if (!ids.length) redirect(aviso(volver, "error", "Marcá al menos un socio"));
+  if (!esPeriodo(periodo)) redirect(aviso(volver, "error", "Elegí el mes"));
+
+  const [socios, yaPagaron] = await Promise.all([
+    db.member.findMany({ where: { id: { in: ids } }, include: { plan: true } }),
+    db.payment.findMany({ where: { memberId: { in: ids }, period: periodo, voided: false, coversFee: true }, select: { memberId: true } }),
+  ]);
+  const pagos = new Set(yaPagaron.map((p) => p.memberId));
+  const nuevos = socios.filter((m) => !pagos.has(m.id));
+  await db.payment.createMany({
+    data: nuevos.map((m) => ({
+      memberId: m.id,
+      period: periodo,
+      planName: m.plan?.name ?? null,
+      feeAmount: m.plan?.price ?? 0,
+      consumosAmount: 0,
+      total: m.plan?.price ?? 0,
+      method: "externo",
+      coversFee: true,
+      notes: "Marcado como pagado desde la lista de socios",
+    })),
+  });
+  revalidatePath("/admin", "layout");
+  const extra = pagos.size ? ` (${pagos.size} ya la tenían pagada)` : "";
+  redirect(aviso(volver, "ok", `Cuota marcada como pagada en ${nuevos.length} socio${nuevos.length === 1 ? "" : "s"}${extra}`));
 }
