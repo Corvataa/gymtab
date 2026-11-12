@@ -9,6 +9,7 @@ import { METODOS, consumosSinCobrar } from "@/lib/cuotas";
 import { cancelarReserva, horaValida, limpiarClasesFuturas } from "@/lib/clases";
 import { esTipo } from "@/lib/entreno";
 import { leerExcelSocios } from "@/lib/importar";
+import { borrarFotosViejas } from "@/lib/fotos";
 import { cerrarSesion, exigirAdmin, iniciarSesion } from "@/lib/session";
 import { ipCliente, limpiarFallos, mensajeBloqueo, minutosBloqueado, registrarFallo } from "@/lib/throttle";
 
@@ -281,6 +282,7 @@ export async function guardarConfiguracion(form: FormData) {
     blockOverdue: form.get("blockOverdue") === "on",
     cancelHours: Math.min(cancelHours, 72),
     bookingDays,
+    photoDays: Math.min(Math.max(entero(form, "photoDays") || 30, 1), 365),
   };
   await db.settings.upsert({ where: { id: 1 }, create: { id: 1, ...datos }, update: datos });
   revalidatePath("/", "layout");
@@ -625,4 +627,60 @@ export async function marcarCuotaPagaVarios(form: FormData) {
   revalidatePath("/admin", "layout");
   const extra = pagos.size ? ` (${pagos.size} ya la tenían pagada)` : "";
   redirect(aviso(volver, "ok", `Cuota marcada como pagada en ${nuevos.length} socio${nuevos.length === 1 ? "" : "s"}${extra}`));
+}
+
+// ---------- Fotos del día ----------
+
+const IMAGEN_VALIDA = /^data:image\/(jpeg|webp|png);base64,[A-Za-z0-9+/=]+$/;
+
+// Sube UNA foto ya achicada en el navegador (el formulario las manda de a una)
+export async function subirFotoDelDia(datos: {
+  date: string;
+  caption: string;
+  image: string;
+  thumb: string;
+  width: number;
+  height: number;
+}): Promise<{ ok: boolean; mensaje: string }> {
+  await exigirAdmin();
+  const { date, image, thumb } = datos;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { ok: false, mensaje: "Fecha inválida" };
+  if (!IMAGEN_VALIDA.test(image) || !IMAGEN_VALIDA.test(thumb)) return { ok: false, mensaje: "Imagen inválida" };
+  if (image.length > 1_500_000 || thumb.length > 200_000) return { ok: false, mensaje: "La foto es muy pesada" };
+  await db.gymPhoto.create({
+    data: {
+      date,
+      caption: datos.caption.trim().slice(0, 120) || null,
+      image,
+      thumb,
+      width: Math.round(datos.width) || 1,
+      height: Math.round(datos.height) || 1,
+    },
+  });
+  return { ok: true, mensaje: "Foto subida" };
+}
+
+// Al terminar de subir: borra las fotos vencidas y actualiza las pantallas
+export async function terminarSubidaFotos() {
+  await exigirAdmin();
+  await borrarFotosViejas();
+  revalidatePath("/fotos");
+  revalidatePath("/inicio");
+  revalidatePath("/admin/fotos");
+}
+
+export async function borrarFotoDelDia(form: FormData) {
+  await exigirAdmin();
+  await db.gymPhoto.deleteMany({ where: { id: texto(form, "id") } });
+  revalidatePath("/fotos");
+  revalidatePath("/inicio");
+  redirect(aviso("/admin/fotos", "ok", "Foto borrada"));
+}
+
+export async function borrarFotosDelDia(form: FormData) {
+  await exigirAdmin();
+  const r = await db.gymPhoto.deleteMany({ where: { date: texto(form, "date") } });
+  revalidatePath("/fotos");
+  revalidatePath("/inicio");
+  redirect(aviso("/admin/fotos", "ok", `Se borraron ${r.count} fotos`));
 }

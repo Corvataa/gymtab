@@ -23,6 +23,7 @@ model Settings {
   bookingDays  Int     @default(7) // con cuántos días de anticipación se puede reservar
   logo         String? // logo del gimnasio como imagen (data URL), se sube desde Configuración
   logoVersion  Int     @default(0) // cambia cada vez que se sube un logo nuevo
+  photoDays    Int     @default(30) // las fotos del día se borran solas después de estos días
 }
 
 // Un plan de cuota (ej: "3 veces por semana", "Libre")
@@ -242,4 +243,18 @@ model PersonalRecord {
   createdAt DateTime @default(now())
 
   @@index([memberId, movement])
+}
+
+// Foto del día que sube el gimnasio para que los socios la vean y compartan
+model GymPhoto {
+  id        String   @id @default(cuid())
+  date      String // día de la foto, "2026-11-12"
+  caption   String? // texto opcional (ej: "WOD del jueves")
+  image     String // foto completa (data URL); se sirve en /fotos/<id>/imagen
+  thumb     String // miniatura (data URL); se sirve en /fotos/<id>/mini
+  width     Int
+  height    Int
+  createdAt DateTime @default(now())
+
+  @@index([date])
 }

@@ -15,6 +15,8 @@ pagan la cuota y anotan lo que sacan de la tienda (se suma a la cuota). El gimna
 - **Reserva clases**: ve los lugares libres, reserva, cancela o se anota en lista de espera.
 - **Entreno:** ve el entrenamiento del día, carga su resultado (tiempo, reps, rondas o peso) y ve el ranking.
 - **Marcas:** registra sus marcas personales por ejercicio y ve su progreso y sus récords.
+- **Mi perfil:** foto, apodo (se ve en el ranking), objetivo, datos de contacto y contacto de emergencia.
+- **Fotos del día:** ve las fotos que suben los profes, las descarga o las comparte directo en sus redes.
 - Toca el producto que sacó, elige la cantidad y confirma. Puede anularlo durante 10 minutos.
 
 **Administración** (`/admin`):
@@ -25,6 +27,7 @@ pagan la cuota y anotan lo que sacan de la tienda (se suma a la cuota). El gimna
   lista de anotados y de espera, anotar o quitar socios, cambiar el cupo o suspender una clase.
 - **Entrenamientos:** el coach publica el entrenamiento de cada día (o lo programa para otro día, o lo deja en borrador)
   y ve los resultados de los socios.
+- **Fotos:** los profes suben las fotos de las clases (varias a la vez, se achican solas). Se borran solas a los 30 días (configurable).
 - **Planes:** opciones de cuota (ej: 3 veces por semana, libre) con su precio.
 - **Productos:** lo que se vende y su precio.
 - **QR:** cartel para imprimir.

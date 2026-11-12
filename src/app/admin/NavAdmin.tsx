@@ -7,6 +7,7 @@ const links: [string, string][] = [
   ["/admin/socios", "Socios"],
   ["/admin/clases", "Clases"],
   ["/admin/entrenamientos", "Entrenamientos"],
+  ["/admin/fotos", "Fotos"],
   ["/admin/planes", "Planes"],
   ["/admin/productos", "Productos"],
   ["/admin/qr", "QR"],

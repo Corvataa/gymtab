@@ -55,7 +55,7 @@ export default async function Inicio({ searchParams }: Props) {
   const mensajePago = resultado ? MENSAJES_PAGO[resultado] : undefined;
 
   const hoy = fechaAR(new Date());
-  const [{ socio, pago, estado, cfg }, pendientes, proxima, entrenos] = await Promise.all([
+  const [{ socio, pago, estado, cfg }, pendientes, proxima, entrenos, fotos] = await Promise.all([
     estadoSocio(memberId, periodo),
     consumosSinCobrar(memberId),
     db.booking.findFirst({
@@ -68,6 +68,7 @@ export default async function Inicio({ searchParams }: Props) {
       orderBy: { createdAt: "asc" },
       include: { results: { where: { memberId } } },
     }),
+    db.gymPhoto.findMany({ orderBy: [{ date: "desc" }, { createdAt: "desc" }], take: 4, select: { id: true, date: true } }),
   ]);
 
   const cuota = pago ? 0 : (socio.plan?.price ?? 0);
@@ -163,6 +164,20 @@ export default async function Inicio({ searchParams }: Props) {
           ))
         )}
       </section>
+
+      {/* Fotos del día */}
+      {fotos.length > 0 && (
+        <Link href="/fotos" className="tarjeta flex flex-col gap-3 hover:border-orange-500/50">
+          <Titulo>Fotos {fotos[0].date === hoy ? "de hoy" : "del gimnasio"}</Titulo>
+          <div className="grid grid-cols-4 gap-1.5">
+            {fotos.map((f) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={f.id} src={`/fotos/${f.id}/mini`} alt="" loading="lazy" className="aspect-square w-full rounded-lg object-cover" />
+            ))}
+          </div>
+          <span className="text-sm font-semibold text-orange-500">Ver todas y compartir →</span>
+        </Link>
+      )}
 
       {/* Tienda */}
       <Link href="/tienda" className="tarjeta flex items-center gap-4 hover:border-orange-500/50">

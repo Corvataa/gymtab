@@ -37,6 +37,11 @@ export default async function Configuracion({ searchParams }: Props) {
             <input name="cancelHours" defaultValue={cfg.cancelHours} inputMode="numeric" className="input" />
           </label>
         </div>
+        <label className="flex flex-col gap-1 text-sm">
+          Las fotos del día se borran solas después de (días)
+          <input name="photoDays" defaultValue={cfg.photoDays} inputMode="numeric" className="input w-28" />
+          <span className="text-xs text-zinc-500">Así no se llena el espacio de la base de datos. Recomendado: 30.</span>
+        </label>
         <label className="flex items-start gap-2 text-sm">
           <input type="checkbox" name="blockOverdue" defaultChecked={cfg.blockOverdue} className="mt-0.5 h-5 w-5" />
           <span>

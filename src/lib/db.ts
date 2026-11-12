@@ -3,7 +3,8 @@ import { PrismaClient } from "@prisma/client";
 
 // Las imágenes (foto de perfil y logo) pesan: no se traen salvo que se pidan con `select`.
 // Se sirven aparte, en /avatar/<id> y /logo.
-const crear = () => new PrismaClient({ omit: { member: { avatar: true }, settings: { logo: true } } });
+const crear = () =>
+  new PrismaClient({ omit: { member: { avatar: true }, settings: { logo: true }, gymPhoto: { image: true, thumb: true } } });
 
 const globalForPrisma = globalThis as unknown as { prisma?: ReturnType<typeof crear> };
 
