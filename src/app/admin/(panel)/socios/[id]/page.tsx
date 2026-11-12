@@ -4,6 +4,7 @@ import { METODOS, NOMBRE_METODO, calcularEstado, configuracion, consumosSinCobra
 import { esPeriodo, fechaHora, nombrePeriodo, periodoActual, periodoSiguiente, periodosCobro, pesos, ultimosPeriodos } from "@/lib/periodo";
 import { actualizarSocio, agregarConsumoAdmin, alternarAnulado, anularCobro, cambiarPin, registrarCobro } from "../../../acciones";
 import Avisos from "../../../Avisos";
+import Avatar from "../../../../Avatar";
 import EtiquetaEstado from "../../../Estado";
 
 type Props = {
@@ -39,8 +40,12 @@ export default async function Socio({ params, searchParams }: Props) {
   return (
     <main className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center gap-3">
+        <Avatar id={socio.id} nombre={socio.name} version={socio.avatarVersion} tam={64} />
         <div>
-          <h1 className="text-2xl font-bold">{socio.name}</h1>
+          <h1 className="text-2xl font-bold">
+            {socio.name}
+            {socio.nickname && <span className="ml-2 text-base font-normal text-zinc-400">«{socio.nickname}»</span>}
+          </h1>
           <p className="text-zinc-500">
             {socio.dni ? `DNI ${socio.dni}` : "Sin DNI"}
             {socio.email && ` · ${socio.email}`}
@@ -50,6 +55,16 @@ export default async function Socio({ params, searchParams }: Props) {
         <EtiquetaEstado estado={estado} />
       </div>
       <Avisos ok={ok} error={error} />
+
+      {(socio.goal || socio.emergencyContact || socio.birthDate) && (
+        <div className="flex flex-wrap gap-2 text-sm">
+          {socio.goal && <span className="rounded-full bg-white/10 px-3 py-1">🎯 {socio.goal}</span>}
+          {socio.birthDate && <span className="rounded-full bg-white/10 px-3 py-1">🎂 {socio.birthDate.split("-").reverse().join("/")}</span>}
+          {socio.emergencyContact && (
+            <span className="rounded-full bg-red-500/15 px-3 py-1 text-red-200 ring-1 ring-red-500/30">🚑 Emergencia: {socio.emergencyContact}</span>
+          )}
+        </div>
+      )}
 
       {!socio.pinHash && (
         <p className="rounded-xl bg-sky-500/10 px-4 py-3 text-sm text-sky-200 ring-1 ring-sky-500/30">

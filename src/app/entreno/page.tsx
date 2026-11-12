@@ -6,6 +6,7 @@ import { TIPOS, mostrarResultado, nombreCorto, ordenarRanking } from "@/lib/entr
 import EncabezadoSocio from "../EncabezadoSocio";
 import NavSocio from "../NavSocio";
 import FormResultado from "./FormResultado";
+import Avatar from "../Avatar";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ export default async function Entreno({ searchParams }: Props) {
   const entrenos = await db.workout.findMany({
     where: { date: fecha, published: true },
     orderBy: { createdAt: "asc" },
-    include: { results: { include: { member: { select: { name: true } } } } },
+    include: { results: { include: { member: { select: { id: true, name: true, nickname: true, avatarVersion: true } } } } },
   });
 
   const etiquetaDia = fecha === hoy ? "Hoy" : fecha === sumarDias(hoy, -1) ? "Ayer" : nombreDia(fecha);
@@ -80,7 +81,8 @@ export default async function Entreno({ searchParams }: Props) {
                       >
                         <span className="flex items-center gap-2">
                           <span className="w-6 text-right text-sm text-zinc-400 tabular-nums">{i + 1}</span>
-                          <span className="font-medium">{nombreCorto(r.member.name)}</span>
+                          <Avatar id={r.member.id} nombre={r.member.name} version={r.member.avatarVersion} tam={30} />
+                          <span className="font-medium">{r.member.nickname || nombreCorto(r.member.name)}</span>
                           {!r.rx && <span className="rounded bg-zinc-200 px-1.5 text-xs dark:bg-zinc-700">adaptado</span>}
                         </span>
                         <span className="font-semibold tabular-nums">{mostrarResultado(w.scoreType, r.value)}</span>

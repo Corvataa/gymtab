@@ -45,6 +45,12 @@ model Member {
   phone                 String?
   email                 String?          @unique // siempre en minúsculas
   birthDate             String? // "1994-01-03"
+  // Perfil que completa el socio
+  avatar                String? // foto de perfil (data URL); se sirve en /avatar/<id>
+  avatarVersion         Int              @default(0) // 0 = sin foto; cambia cada vez que sube una nueva
+  nickname              String? // apodo para el ranking
+  goal                  String? // "mi objetivo"
+  emergencyContact      String? // nombre y teléfono de contacto de emergencia
   plan                  Plan?            @relation(fields: [planId], references: [id])
   planId                String?
   monthlyLimit          Int              @default(20000) // tope de consumo mensual en pesos

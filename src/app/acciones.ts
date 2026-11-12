@@ -337,3 +337,53 @@ export async function activarCuenta(_prev: Resultado, form: FormData): Promise<R
   });
   return { ok: true, mensaje: `¡Listo, ${socio.name.split(" ")[0]}! Pediste activar tu cuenta. Cuando el gimnasio lo apruebe, entrás con tu DNI y el PIN que elegiste.` };
 }
+
+// ---------- Perfil del socio ----------
+
+export async function guardarPerfil(_prev: Resultado, form: FormData): Promise<Resultado> {
+  const memberId = await exigirSocio();
+  const t = (k: string, max = 120) => String(form.get(k) ?? "").trim().replace(/\s+/g, " ").slice(0, max) || null;
+  const email = t("email")?.toLowerCase() ?? null;
+  const fechaNac = t("birthDate");
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, mensaje: "Revisá el email" };
+  if (fechaNac && (!/^\d{4}-\d{2}-\d{2}$/.test(fechaNac) || fechaNac > fechaAR(new Date()))) {
+    return { ok: false, mensaje: "Revisá la fecha de nacimiento" };
+  }
+  if (email && (await db.member.findFirst({ where: { email, id: { not: memberId } } }))) {
+    return { ok: false, mensaje: "Ese email ya lo usa otra cuenta del gimnasio" };
+  }
+  await db.member.update({
+    where: { id: memberId },
+    data: {
+      nickname: t("nickname", 24),
+      goal: t("goal", 80),
+      phone: t("phone", 30),
+      email,
+      birthDate: fechaNac,
+      emergencyContact: t("emergencyContact", 100),
+    },
+  });
+  revalidatePath("/", "layout");
+  return { ok: true, mensaje: "¡Perfil guardado!" };
+}
+
+const FOTO_VALIDA = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
+
+export async function guardarFoto(foto: string): Promise<Resultado> {
+  const memberId = await exigirSocio();
+  if (!FOTO_VALIDA.test(foto) || foto.length > 400_000) return { ok: false, mensaje: "No se pudo guardar esa imagen. Probá con otra." };
+  await db.member.update({
+    where: { id: memberId },
+    // la versión es la hora en segundos: cambia siempre que se sube una foto nueva
+    data: { avatar: foto, avatarVersion: Math.floor(Date.now() / 1000) },
+  });
+  revalidatePath("/", "layout");
+  return { ok: true, mensaje: "¡Foto actualizada!" };
+}
+
+export async function quitarFoto(): Promise<Resultado> {
+  const memberId = await exigirSocio();
+  await db.member.update({ where: { id: memberId }, data: { avatar: null, avatarVersion: 0 } });
+  revalidatePath("/", "layout");
+  return { ok: true, mensaje: "Foto quitada" };
+}

@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { fechaAR, horaAR, nombreDia } from "@/lib/clases";
 import { alternarSuspension, anotarSocio, cambiarCupo, quitarReserva } from "../../../acciones";
 import Avisos from "../../../Avisos";
+import Avatar from "../../../../Avatar";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; error?: string }> };
 
@@ -30,7 +31,10 @@ export default async function Clase({ params, searchParams }: Props) {
           <li key={b.id} className="flex items-center justify-between gap-3 py-2">
             <span>
               <span className="mr-2 text-zinc-400 tabular-nums">{i + 1}.</span>
-              <Link href={`/admin/socios/${b.memberId}`} className="underline">{b.member.name}</Link>
+              <Link href={`/admin/socios/${b.memberId}`} className="inline-flex items-center gap-2 underline">
+                <Avatar id={b.member.id} nombre={b.member.name} version={b.member.avatarVersion} tam={28} />
+                {b.member.name}
+              </Link>
             </span>
             <form action={quitarReserva}>
               <input type="hidden" name="bookingId" value={b.id} />

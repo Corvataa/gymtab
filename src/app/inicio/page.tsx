@@ -77,7 +77,7 @@ export default async function Inicio({ searchParams }: Props) {
 
   return (
     <main className="mx-auto flex max-w-md flex-col gap-4 px-4 pb-28 pt-6">
-      <EncabezadoSocio titulo={socio.name.split(" ")[0]} subtitulo="Hola," />
+      <EncabezadoSocio titulo={socio.nickname || socio.name.split(" ")[0]} subtitulo="Hola," />
 
       {mensajePago && (
         <p

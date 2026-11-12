@@ -6,6 +6,7 @@ import { aprobarActivacion, aprobarSocio, asignarPlanVarios, crearSocio, marcarC
 import Avisos from "../../Avisos";
 import EtiquetaEstado from "../../Estado";
 import MarcarTodos from "./MarcarTodos";
+import Avatar from "../../../Avatar";
 
 type Props = { searchParams: Promise<{ ok?: string; error?: string; q?: string; filtro?: string }> };
 
@@ -207,7 +208,8 @@ export default async function Socios({ searchParams }: Props) {
             <li key={s.id} className="flex items-center gap-3 pl-4 hover:bg-white/5">
               <input type="checkbox" name="ids" value={s.id} form="asignar" className="h-5 w-5 shrink-0 accent-orange-500" aria-label={`Marcar a ${s.name}`} />
               <Link href={`/admin/socios/${s.id}`} className="flex flex-1 items-center justify-between gap-3 py-3 pr-4">
-                <div className="min-w-0">
+                <Avatar id={s.id} nombre={s.name} version={s.avatarVersion} tam={36} />
+                <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{s.name}</p>
                   <p className="truncate text-sm text-zinc-500">
                     {s.dni ? `DNI ${s.dni}` : s.email ?? "sin DNI"} · {s.plan?.name ?? "sin plan"}

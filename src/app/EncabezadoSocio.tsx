@@ -1,24 +1,25 @@
 import Link from "next/link";
-import { salir } from "./acciones";
+import { db } from "@/lib/db";
+import { sesionActual } from "@/lib/session";
 import Logo from "./Logo";
-import { IconoLlave, IconoSalir } from "./Iconos";
+import Avatar from "./Avatar";
 
-// Encabezado de las pantallas del socio: logo, título y accesos a PIN / salir
-export default function EncabezadoSocio({ titulo, subtitulo }: { titulo: string; subtitulo?: string }) {
+// Encabezado de las pantallas del socio: logo, título y su foto (que lleva a "Mi perfil")
+export default async function EncabezadoSocio({ titulo, subtitulo }: { titulo: string; subtitulo?: string }) {
+  const s = await sesionActual();
+  const socio =
+    s?.rol === "socio"
+      ? await db.member.findUnique({ where: { id: s.id }, select: { id: true, name: true, avatarVersion: true } })
+      : null;
   return (
     <header className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <Logo className="h-9" />
-        <div className="flex items-center gap-1 text-zinc-400">
-          <Link href="/tienda/pin" aria-label="Cambiar PIN" title="Cambiar PIN" className="rounded-lg p-2 hover:bg-white/10 hover:text-white">
-            <IconoLlave className="h-5 w-5" />
+        {socio && (
+          <Link href="/perfil" aria-label="Mi perfil" title="Mi perfil" className="rounded-full transition hover:scale-105">
+            <Avatar id={socio.id} nombre={socio.name} version={socio.avatarVersion} tam={42} />
           </Link>
-          <form action={salir}>
-            <button aria-label="Salir" title="Salir" className="rounded-lg p-2 hover:bg-white/10 hover:text-white">
-              <IconoSalir className="h-5 w-5" />
-            </button>
-          </form>
-        </div>
+        )}
       </div>
       <div>
         {subtitulo && <p className="text-sm text-zinc-400">{subtitulo}</p>}
