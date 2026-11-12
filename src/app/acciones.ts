@@ -28,7 +28,14 @@ export async function loginSocio(_prev: Resultado, form: FormData): Promise<Resu
   if (bloqueo) return { ok: false, mensaje: mensajeBloqueo(bloqueo), dni };
 
   const socio = await db.member.findUnique({ where: { dni } });
-  if (!socio || !(await bcrypt.compare(pin, socio.pinHash))) {
+  if (!socio?.pinHash) {
+    // ¿Es un socio importado que pidió activar su cuenta y todavía no lo aprobaron?
+    const pendiente = await db.member.findFirst({ where: { pendingDni: dni, pinHash: null } });
+    if (pendiente) {
+      return { ok: false, mensaje: "Tu activación está pendiente: el gimnasio tiene que aprobarla. Avisá en recepción.", dni };
+    }
+  }
+  if (!socio?.pinHash || !(await bcrypt.compare(pin, socio.pinHash))) {
     await registrarFallo(clave);
     return { ok: false, mensaje: "DNI o PIN incorrectos", dni };
   }
@@ -54,7 +61,7 @@ export async function cambiarMiPin(_prev: Resultado, form: FormData): Promise<Re
   const bloqueo = await minutosBloqueado(clave);
   if (bloqueo) return { ok: false, mensaje: mensajeBloqueo(bloqueo) };
 
-  if (!(await bcrypt.compare(actual, socio.pinHash))) {
+  if (!socio.pinHash || !(await bcrypt.compare(actual, socio.pinHash))) {
     await registrarFallo(clave);
     return { ok: false, mensaje: "El PIN actual no es correcto" };
   }
@@ -250,7 +257,7 @@ export async function registrarse(_prev: Resultado, form: FormData): Promise<Res
   const name = t("name").replace(/\s+/g, " ");
   const dni = t("dni").replace(/\D/g, "");
   const phone = t("phone") || null;
-  const email = t("email") || null;
+  const email = t("email").toLowerCase() || null;
   const planId = t("planId") || null;
   const pin = t("pin");
   const datos = { ok: false, dni } as const;
@@ -268,8 +275,15 @@ export async function registrarse(_prev: Resultado, form: FormData): Promise<Res
   if (planId && !(await db.plan.findFirst({ where: { id: planId, active: true } }))) {
     return { ...datos, mensaje: "Elegí un plan de la lista" };
   }
-  if (await db.member.findUnique({ where: { dni } })) {
+  if ((await db.member.findUnique({ where: { dni } })) || (await db.member.findFirst({ where: { pendingDni: dni } }))) {
     return { ...datos, mensaje: "Ya existe una cuenta con ese DNI. Si olvidaste el PIN, pedí en recepción que te lo cambien." };
+  }
+  if (email) {
+    const conEmail = await db.member.findUnique({ where: { email } });
+    if (conEmail && !conEmail.pinHash) {
+      return { ...datos, mensaje: "Ese email ya está registrado en el gimnasio: tocá «¿Ya eras socio? Activá tu cuenta» en la pantalla de entrada." };
+    }
+    if (conEmail) return { ...datos, mensaje: "Ya existe una cuenta con ese email." };
   }
 
   await db.member.create({
@@ -277,4 +291,49 @@ export async function registrarse(_prev: Resultado, form: FormData): Promise<Res
   });
   await registrarFallo(clave); // cuenta como un alta más desde esta conexión
   return { ok: true, mensaje: "¡Listo! Tu cuenta fue creada. Cuando el gimnasio la apruebe, vas a poder entrar con tu DNI y PIN." };
+}
+
+// ---------- Activar cuenta (socios que venían de la otra aplicación) ----------
+// El socio pone su email, su DNI y elige un PIN. Queda pendiente hasta que el gimnasio lo aprueba,
+// así nadie puede activar la cuenta de otra persona sabiendo su email.
+
+export async function activarCuenta(_prev: Resultado, form: FormData): Promise<Resultado> {
+  const t = (k: string) => String(form.get(k) ?? "").trim();
+  const email = t("email").toLowerCase();
+  const dni = t("dni").replace(/\D/g, "");
+  const pin = t("pin");
+  const datos = { ok: false, dni } as const;
+
+  const clave = `activar:${await ipCliente()}`;
+  const bloqueo = await minutosBloqueado(clave);
+  if (bloqueo) return { ...datos, mensaje: mensajeBloqueo(bloqueo) };
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ...datos, mensaje: "Revisá el email" };
+  if (dni.length < 7 || dni.length > 9) return { ...datos, mensaje: "Revisá el DNI (solo números)" };
+  if (!/^\d{4,6}$/.test(pin)) return { ...datos, mensaje: "El PIN tiene que tener de 4 a 6 números" };
+  if (pin !== t("pin2")) return { ...datos, mensaje: "Los PIN no coinciden" };
+
+  const socio = await db.member.findUnique({ where: { email } });
+  if (!socio) {
+    await registrarFallo(clave);
+    return { ...datos, mensaje: "No encontramos ese email en el gimnasio. Probá con el que usabas en la otra app, o creá una cuenta nueva." };
+  }
+  if (socio.pinHash) {
+    return { ...datos, mensaje: "Esa cuenta ya está activada: entrá con tu DNI y PIN. Si no te acordás el PIN, pedilo en recepción." };
+  }
+  // Si el gimnasio ya tenía su DNI, tiene que coincidir (sirve para confirmar que es la persona)
+  if (socio.dni && socio.dni !== dni) {
+    await registrarFallo(clave);
+    return { ...datos, mensaje: "El DNI no coincide con el que tiene el gimnasio. Consultá en recepción." };
+  }
+  const otro = await db.member.findFirst({
+    where: { id: { not: socio.id }, OR: [{ dni }, { pendingDni: dni }] },
+  });
+  if (otro) return { ...datos, mensaje: "Ese DNI ya está usado en otra cuenta. Consultá en recepción." };
+
+  await db.member.update({
+    where: { id: socio.id },
+    data: { pendingDni: dni, pendingPinHash: await bcrypt.hash(pin, 10), activationRequestedAt: new Date() },
+  });
+  return { ok: true, mensaje: `¡Listo, ${socio.name.split(" ")[0]}! Pediste activar tu cuenta. Cuando el gimnasio lo apruebe, entrás con tu DNI y el PIN que elegiste.` };
 }

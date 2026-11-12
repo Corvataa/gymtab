@@ -38,24 +38,31 @@ model Plan {
 
 // Un socio del gimnasio
 model Member {
-  id           String           @id @default(cuid())
-  name         String
-  dni          String           @unique
-  pinHash      String // el PIN se guarda encriptado, nunca en texto plano
-  phone        String?
-  email        String?
-  plan         Plan?            @relation(fields: [planId], references: [id])
-  planId       String?
-  monthlyLimit Int              @default(20000) // tope de consumo mensual en pesos
-  active       Boolean          @default(true)
-  approved     Boolean          @default(true) // false = se anotó solo y espera aprobación del gimnasio
-  createdAt    DateTime         @default(now())
-  consumptions Consumption[]
-  payments     Payment[]
-  checkouts    Checkout[]
-  bookings     Booking[]
-  results      WorkoutResult[]
-  records      PersonalRecord[]
+  id                    String           @id @default(cuid())
+  name                  String
+  dni                   String?          @unique // puede faltar en socios importados hasta que activan su cuenta
+  pinHash               String? // el PIN se guarda encriptado; vacío = todavía no activó su cuenta
+  phone                 String?
+  email                 String?          @unique // siempre en minúsculas
+  birthDate             String? // "1994-01-03"
+  plan                  Plan?            @relation(fields: [planId], references: [id])
+  planId                String?
+  monthlyLimit          Int              @default(20000) // tope de consumo mensual en pesos
+  active                Boolean          @default(true)
+  approved              Boolean          @default(true) // false = se anotó solo y espera aprobación del gimnasio
+  // Activación de socios importados: guardamos lo que propone el socio hasta que el gimnasio lo aprueba
+  pendingDni            String?
+  pendingPinHash        String?
+  activationRequestedAt DateTime?
+  importedAt            DateTime? // cuándo se importó desde otra aplicación
+  legacy                Json? // datos que venían de la otra aplicación (solo para consultar)
+  createdAt             DateTime         @default(now())
+  consumptions          Consumption[]
+  payments              Payment[]
+  checkouts             Checkout[]
+  bookings              Booking[]
+  results               WorkoutResult[]
+  records               PersonalRecord[]
 }
 
 // Un cobro: la cuota de un mes + los consumos que estaban pendientes

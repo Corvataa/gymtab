@@ -27,12 +27,20 @@ export default async function Inicio() {
 
       <LoginSocio />
 
-      <p className="-mt-4 text-center text-sm text-zinc-400">
-        ¿Primera vez?{" "}
-        <Link href="/registro" className="font-semibold text-orange-500 underline underline-offset-4">
-          Creá tu cuenta
-        </Link>
-      </p>
+      <div className="-mt-4 flex flex-col gap-2 text-center text-sm text-zinc-400">
+        <p>
+          ¿Ya eras socio del gimnasio?{" "}
+          <Link href="/activar" className="font-semibold text-orange-500 underline underline-offset-4">
+            Activá tu cuenta
+          </Link>
+        </p>
+        <p>
+          ¿Primera vez?{" "}
+          <Link href="/registro" className="font-semibold text-orange-500 underline underline-offset-4">
+            Creá tu cuenta
+          </Link>
+        </p>
+      </div>
 
       <Link href="/admin" className="text-center text-xs uppercase tracking-widest text-zinc-600 hover:text-zinc-400">
         Acceso administración

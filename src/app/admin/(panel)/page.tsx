@@ -11,7 +11,7 @@ export default async function Inicio({ searchParams }: Props) {
   const periodo = esPeriodo(p) ? p : periodoActual();
   const [{ filas, pagos, cfg }, solicitudes] = await Promise.all([
     resumenSocios(periodo),
-    db.member.count({ where: { approved: false } }),
+    db.member.count({ where: { OR: [{ approved: false }, { pendingPinHash: { not: null } }] } }),
   ]);
 
   const cuenta = (e: Estado) => filas.filter((f) => f.estado === e).length;
@@ -28,7 +28,7 @@ export default async function Inicio({ searchParams }: Props) {
           className="flex items-center justify-between gap-3 rounded-2xl border border-orange-500/50 bg-orange-500/10 px-4 py-3 font-semibold hover:bg-orange-500/20"
         >
           <span>
-            Tenés <span className="text-orange-500">{solicitudes}</span> solicitud{solicitudes === 1 ? "" : "es"} de alta para revisar
+            Tenés <span className="text-orange-500">{solicitudes}</span> solicitud{solicitudes === 1 ? "" : "es"} de alta o activación para revisar
           </span>
           <span aria-hidden>→</span>
         </Link>

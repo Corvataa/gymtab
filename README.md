@@ -7,6 +7,7 @@ pagan la cuota y anotan lo que sacan de la tienda (se suma a la cuota). El gimna
 
 **Socio** (desde el celular, escaneando el QR):
 - **Crea su cuenta** desde la app; el gimnasio la aprueba desde el panel.
+- Si ya era socio (importado desde otra app), **activa su cuenta** con su email, completa el DNI y elige un PIN; el gimnasio lo aprueba.
 - **Inicio:** resumen con su cuota, su próxima clase, el entrenamiento de hoy y lo pendiente de la tienda.
 - Entra con su DNI y un PIN (y lo puede cambiar).
 - Ve el estado de su cuota (al día, pendiente o vencida) y cuánto le toca pagar: cuota + consumos.
@@ -18,7 +19,7 @@ pagan la cuota y anotan lo que sacan de la tienda (se suma a la cuota). El gimna
 
 **Administración** (`/admin`):
 - **Inicio:** cuotas del mes: cobrado, falta cobrar, socios al día, pendientes y vencidos. Planilla CSV.
-- **Socios:** solicitudes de alta para aprobar o rechazar; alta con plan, datos de contacto, tope de consumos, pausar, cambiar PIN.
+- **Socios:** importar desde Excel (por ejemplo, la exportación de CrossHero), activaciones y solicitudes de alta para aprobar, filtros (sin plan, sin activar, pausados), asignar plan a varios a la vez; alta con plan, datos de contacto, tope de consumos, pausar, cambiar PIN.
   En la ficha de cada socio: **registrar cobro** (cuota + consumos sin cobrar, medio de pago), historial y anulación de cobros.
 - **Clases:** horarios semanales (día, hora, cupo, coach), agenda de los próximos 7 días,
   lista de anotados y de espera, anotar o quitar socios, cambiar el cupo o suspender una clase.

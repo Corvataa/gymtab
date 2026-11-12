@@ -8,6 +8,7 @@ import { esPeriodo, periodoActual } from "@/lib/periodo";
 import { METODOS, consumosSinCobrar } from "@/lib/cuotas";
 import { cancelarReserva, horaValida, limpiarClasesFuturas } from "@/lib/clases";
 import { esTipo } from "@/lib/entreno";
+import { leerExcelSocios } from "@/lib/importar";
 import { cerrarSesion, exigirAdmin, iniciarSesion } from "@/lib/session";
 import { ipCliente, limpiarFallos, mensajeBloqueo, minutosBloqueado, registrarFallo } from "@/lib/throttle";
 
@@ -73,6 +74,7 @@ export async function crearSocio(form: FormData) {
       dni,
       monthlyLimit,
       phone: opcional(form, "phone"),
+      email: opcional(form, "email")?.toLowerCase() ?? null,
       planId: opcional(form, "planId"),
       pinHash: await bcrypt.hash(pin, 10),
     },
@@ -84,12 +86,21 @@ export async function crearSocio(form: FormData) {
 export async function actualizarSocio(form: FormData) {
   await exigirAdmin();
   const id = texto(form, "id");
+  const email = opcional(form, "email")?.toLowerCase() ?? null;
+  const dniTexto = texto(form, "dni").replace(/\D/g, "");
+  const dni = dniTexto || null;
+  if (dni && (dni.length < 7 || dni.length > 9)) redirect(aviso(`/admin/socios/${id}`, "error", "Revisá el DNI"));
+  const repetido = await db.member.findFirst({
+    where: { id: { not: id }, OR: [...(dni ? [{ dni }, { pendingDni: dni }] : []), ...(email ? [{ email }] : [])] },
+  });
+  if (repetido) redirect(aviso(`/admin/socios/${id}`, "error", `Ese DNI o email ya lo tiene ${repetido.name}`));
   await db.member.update({
     where: { id },
     data: {
       name: texto(form, "name"),
       phone: opcional(form, "phone"),
-      email: opcional(form, "email"),
+      email: email,
+      dni: dni,
       planId: opcional(form, "planId"),
       monthlyLimit: entero(form, "monthlyLimit"),
       active: form.get("active") === "on",
@@ -437,4 +448,147 @@ export async function rechazarSocio(form: FormData) {
   await db.member.deleteMany({ where: { id: texto(form, "id"), approved: false } });
   revalidatePath("/admin", "layout");
   redirect(aviso("/admin/socios", "ok", "Solicitud rechazada"));
+}
+
+// ---------- Importar socios desde Excel ----------
+
+export type ResumenImportacion = {
+  ok: boolean;
+  mensaje: string;
+  importado?: boolean;
+  total?: number;
+  nuevos?: number;
+  activos?: number;
+  pausados?: number;
+  yaEstaban?: number;
+  repetidos?: number;
+  conProblemas?: number;
+  muestra?: { fila: number; nombre: string; email: string; dni: string; estado: string; nota: string }[];
+} | null;
+
+export async function importarSocios(_prev: ResumenImportacion, form: FormData): Promise<ResumenImportacion> {
+  await exigirAdmin();
+  const archivo = form.get("archivo");
+  const confirmar = form.get("modo") === "importar";
+  if (!(archivo instanceof File) || archivo.size === 0) return { ok: false, mensaje: "Elegí el Excel con los socios" };
+  if (archivo.size > 5_000_000) return { ok: false, mensaje: "El archivo es muy grande (máximo 5 MB)" };
+
+  const { filas, error } = await leerExcelSocios(await archivo.arrayBuffer());
+  if (error) return { ok: false, mensaje: error };
+  if (filas.length === 0) return { ok: false, mensaje: "El Excel no tiene socios" };
+
+  // ¿Quiénes ya están en la app? (por email o DNI)
+  const existentes = await db.member.findMany({ select: { email: true, dni: true, pendingDni: true } });
+  const emails = new Set(existentes.map((m) => m.email).filter(Boolean));
+  const dnis = new Set(existentes.flatMap((m) => [m.dni, m.pendingDni]).filter(Boolean));
+
+  const vistos = new Set<string>();
+  const nuevos: typeof filas = [];
+  const muestra: NonNullable<NonNullable<ResumenImportacion>["muestra"]> = [];
+  let yaEstaban = 0, repetidos = 0;
+  for (const f of filas) {
+    let estado: string;
+    if ((f.email && emails.has(f.email)) || (f.dni && dnis.has(f.dni))) {
+      yaEstaban++;
+      estado = "Ya estaba";
+    } else if ((f.email && vistos.has(f.email)) || (f.dni && vistos.has(f.dni))) {
+      repetidos++;
+      estado = "Repetido en el Excel";
+    } else {
+      nuevos.push(f);
+      estado = f.active ? "Nuevo" : "Nuevo (pausado)";
+    }
+    if (f.email) vistos.add(f.email);
+    if (f.dni) vistos.add(f.dni);
+    if (muestra.length < 400) {
+      muestra.push({ fila: f.fila, nombre: f.name, email: f.email ?? "—", dni: f.dni ?? "—", estado, nota: f.problemas.join(" · ") });
+    }
+  }
+
+  const resumen = {
+    ok: true,
+    total: filas.length,
+    nuevos: nuevos.length,
+    activos: nuevos.filter((f) => f.active).length,
+    pausados: nuevos.filter((f) => !f.active).length,
+    yaEstaban,
+    repetidos,
+    conProblemas: filas.filter((f) => f.problemas.length).length,
+    muestra,
+  };
+  if (!confirmar) return { ...resumen, mensaje: "Vista previa: todavía no se cargó nada." };
+
+  const ahora = new Date();
+  const creados = await db.member.createMany({
+    data: nuevos.map((f) => ({
+      name: f.name,
+      email: f.email,
+      phone: f.phone,
+      dni: f.dni,
+      birthDate: f.birthDate,
+      active: f.active,
+      approved: true,
+      pinHash: null, // activa su cuenta desde la app
+      importedAt: ahora,
+      legacy: f.legacy,
+      ...(f.createdAt ? { createdAt: f.createdAt } : {}),
+    })),
+    skipDuplicates: true,
+  });
+  revalidatePath("/admin", "layout");
+  return {
+    ...resumen,
+    importado: true,
+    mensaje: `Listo: se cargaron ${creados.count} socios. Ahora pueden activar su cuenta desde la app.`,
+  };
+}
+
+// ---------- Activaciones de socios importados ----------
+
+export async function aprobarActivacion(form: FormData) {
+  await exigirAdmin();
+  const id = texto(form, "id");
+  const m = await db.member.findUniqueOrThrow({ where: { id } });
+  if (!m.pendingPinHash || !m.pendingDni) redirect(aviso("/admin/socios", "error", "Esa activación ya no está pendiente"));
+  const otro = await db.member.findFirst({ where: { id: { not: id }, dni: m.pendingDni } });
+  if (otro) redirect(aviso("/admin/socios", "error", `El DNI ${m.pendingDni} ya lo tiene ${otro.name}. Revisalo antes de aprobar.`));
+  await db.member.update({
+    where: { id },
+    data: {
+      dni: m.pendingDni,
+      pinHash: m.pendingPinHash,
+      pendingDni: null,
+      pendingPinHash: null,
+      activationRequestedAt: null,
+      active: true,
+      approved: true,
+      planId: opcional(form, "planId") ?? m.planId,
+    },
+  });
+  revalidatePath("/admin", "layout");
+  redirect(aviso("/admin/socios", "ok", `${m.name} ya puede entrar a la app`));
+}
+
+export async function rechazarActivacion(form: FormData) {
+  await exigirAdmin();
+  await db.member.update({
+    where: { id: texto(form, "id") },
+    data: { pendingDni: null, pendingPinHash: null, activationRequestedAt: null },
+  });
+  revalidatePath("/admin", "layout");
+  redirect(aviso("/admin/socios", "ok", "Activación rechazada. El socio puede volver a pedirla."));
+}
+
+// ---------- Asignar plan a varios socios ----------
+
+export async function asignarPlanVarios(form: FormData) {
+  await exigirAdmin();
+  const ids = form.getAll("ids").map(String).filter(Boolean);
+  const planId = opcional(form, "planId");
+  const volver = `/admin/socios${texto(form, "filtro") ? `?filtro=${texto(form, "filtro")}` : ""}`;
+  if (!ids.length) redirect(aviso(volver, "error", "Marcá al menos un socio"));
+  const r = await db.member.updateMany({ where: { id: { in: ids } }, data: { planId } });
+  revalidatePath("/admin", "layout");
+  const sep = volver.includes("?") ? "&" : "?";
+  redirect(`${volver}${sep}${new URLSearchParams({ ok: `Plan actualizado en ${r.count} socio${r.count === 1 ? "" : "s"}` })}`);
 }

@@ -17,7 +17,7 @@ export async function GET(req: Request) {
     lineas.push(
       [
         esc(f.socio.name),
-        esc(f.socio.dni),
+        esc(f.socio.dni ?? ""),
         esc(f.socio.plan?.name ?? ""),
         ESTADOS[f.estado].texto,
         f.cuota,

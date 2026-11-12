@@ -48,13 +48,24 @@ export default async function Socio({ params, searchParams }: Props) {
         <div>
           <h1 className="text-2xl font-bold">{socio.name}</h1>
           <p className="text-zinc-500">
-            DNI {socio.dni}
+            {socio.dni ? `DNI ${socio.dni}` : "Sin DNI"}
+            {socio.email && ` · ${socio.email}`}
             {socio.phone && ` · ${socio.phone}`} · {socio.plan?.name ?? "sin plan"}
           </p>
         </div>
         <EtiquetaEstado estado={estado} />
       </div>
       <Avisos ok={ok} error={error} />
+
+      {!socio.pinHash && (
+        <p className="rounded-xl bg-sky-500/10 px-4 py-3 text-sm text-sky-200 ring-1 ring-sky-500/30">
+          {socio.pendingPinHash
+            ? "Pidió activar su cuenta: aprobala desde Socios → Activaciones de cuenta."
+            : socio.email
+              ? `Todavía no activó su cuenta. Puede hacerlo desde la app con su email (${socio.email}), o podés cargarle DNI y PIN acá abajo.`
+              : "Todavía no tiene cuenta activa y no tiene email: cargale el DNI (en Datos) y un PIN (en Cambiar PIN) para que pueda entrar."}
+        </p>
+      )}
 
       {/* Cobro */}
       <form action={registrarCobro} className="tarjeta flex flex-col gap-4 border-orange-600/40">
@@ -106,6 +117,10 @@ export default async function Socio({ params, searchParams }: Props) {
           <label className="flex flex-col gap-1 text-sm">
             Nombre
             <input name="name" defaultValue={socio.name} required className="input" />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            DNI
+            <input name="dni" defaultValue={socio.dni ?? ""} inputMode="numeric" placeholder="Sin cargar" className="input" />
           </label>
           <div className="grid grid-cols-2 gap-3">
             <label className="flex flex-col gap-1 text-sm">
@@ -228,6 +243,28 @@ export default async function Socio({ params, searchParams }: Props) {
           ))}
         </ul>
       </section>
+      {socio.legacy && typeof socio.legacy === "object" && !Array.isArray(socio.legacy) && (
+        <section className="tarjeta flex flex-col gap-2">
+          <h2 className="font-semibold">Datos de CrossHero</h2>
+          <p className="-mt-1 text-xs text-zinc-500">
+            Importados {socio.importedAt ? fechaHora(socio.importedAt) : ""}. Solo para consultar: no se usan para la cuota.
+          </p>
+          <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
+            {socio.birthDate && (
+              <div className="flex justify-between gap-3 border-b border-white/5 py-1">
+                <dt className="text-zinc-400">Fecha de nacimiento</dt>
+                <dd>{socio.birthDate.split("-").reverse().join("/")}</dd>
+              </div>
+            )}
+            {Object.entries(socio.legacy as Record<string, string>).map(([k, v]) => (
+              <div key={k} className="flex justify-between gap-3 border-b border-white/5 py-1">
+                <dt className="text-zinc-400">{k}</dt>
+                <dd className="text-right">{String(v)}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
     </main>
   );
 }
