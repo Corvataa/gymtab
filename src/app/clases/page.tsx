@@ -37,13 +37,20 @@ export default async function Clases() {
   const miReserva = new Map(mias.map((b) => [b.sessionId, b]));
 
   // Posición en lista de espera
-  const posiciones = new Map<string, number>();
-  for (const b of mias.filter((x) => x.status === "waitlist")) {
-    const antes = await db.booking.count({
-      where: { sessionId: b.sessionId, status: "waitlist", createdAt: { lt: b.createdAt } },
-    });
-    posiciones.set(b.sessionId, antes + 1);
-  }
+  // Posición en lista de espera (una sola consulta para todas las clases)
+  const misEsperas = mias.filter((x) => x.status === "waitlist");
+  const esperas = misEsperas.length
+    ? await db.booking.findMany({
+        where: { sessionId: { in: misEsperas.map((b) => b.sessionId) }, status: "waitlist" },
+        select: { sessionId: true, createdAt: true },
+      })
+    : [];
+  const posiciones = new Map(
+    misEsperas.map((b) => [
+      b.sessionId,
+      esperas.filter((e) => e.sessionId === b.sessionId && e.createdAt < b.createdAt).length + 1,
+    ]),
+  );
 
   // Agrupamos por día
   const porDia = new Map<string, typeof clases>();
